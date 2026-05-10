@@ -19,6 +19,7 @@ const ELIM_ROUNDS = [
 const STEPS = [
   ...GROUP_IDS.map(id => ({type:'group',id})),
   {type:'summary'},
+  {type:'best8'},
   ...ELIM_ROUNDS.map(r => ({type:'elim',...r})),
 ];
 // Son 32 resmi eşleşmeleri
@@ -101,7 +102,7 @@ async function hashPw(p){
 // ── STATE ─────────────────────────────────────────────────────
 const S={
   user:null,
-  preds:{group_rankings:{},bracket:{},champion:''},
+  preds:{group_rankings:{},bracket:{},champion:'',best8:[]},
   currentStep:0,
 
   ranking(g){const r=this.preds.group_rankings[g];return(r&&r.length===4)?[...r]:GROUPS[g].teams.map(t=>t.n);},
@@ -112,8 +113,26 @@ const S={
     return r.some((t,i)=>t!==GROUPS[g].teams[i].n);
   },
   doneCount(){return GROUP_IDS.filter(g=>this.isGroupDone(g)).length;},
+  // Tüm grupların 3. sırası
+  allThirds(){return GROUP_IDS.map(g=>({gid:g,name:this.ranking(g)[2],flag:getFlag(this.ranking(g)[2])}));},
+  toggleBest8(name){
+    const b=this.preds.best8||[];
+    const idx=b.indexOf(name);
+    if(idx>=0){b.splice(idx,1);}
+    else if(b.length<8){b.push(name);}
+    else{return false;}// 8 dolu
+    this.preds.best8=b;
+    return true;
+  },
+  isBest8(name){return(this.preds.best8||[]).includes(name);},
   r32team(src){
-    if(src.t==='3rd')return{n:src.lb,f:'❓',tbd:true};
+    if(src.t==='3rd'){
+      // Best8'den sırayla doldur
+      const b=this.preds.best8||[];
+      const idx=src.slot||0;
+      const n=b[idx];
+      return n?{n,f:getFlag(n),tbd:false}:{n:'En İyi 3.',f:'❓',tbd:true};
+    }
     const r=this.ranking(src.g);
     const n=r[src.p-1];
     return n?{n,f:getFlag(n),tbd:false}:{n:'TBD',f:'❓',tbd:true};
@@ -248,9 +267,7 @@ async function onLoginSuccess(user){
   sessionStorage.setItem('wc_user',JSON.stringify(user));
   try{
     const p=await DB.getPred(user.id);
-    if(p){S.preds.group_rankings=p.group_rankings||{};S.preds.bracket=p.bracket||{};S.preds.champion=p.champion||'';}
-  }catch(e){}
-  // Splash → App geçişi
+    if(p){S.preds.group_rankings=p.group_rankings||{};S.preds.bracket=p.bracket||{};S.preds.champion=p.champion||'';S.preds.best8=p.best8||[];}
   document.getElementById('splash-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
   updateHeader();
@@ -259,7 +276,7 @@ async function onLoginSuccess(user){
 }
 
 function doLogout(){
-  S.user=null;S.preds={group_rankings:{},bracket:{},champion:''};
+  S.user=null;S.preds={group_rankings:{},bracket:{},champion:'',best8:[]};
   sessionStorage.removeItem('wc_user');
   document.getElementById('main-app').style.display='none';
   document.getElementById('splash-screen').style.display='flex';
@@ -292,6 +309,7 @@ function renderStepBar(){
   let lbl='';
   if(step.type==='group')lbl=`Grup ${step.id}`;
   else if(step.type==='summary')lbl='Grup Özeti';
+  else if(step.type==='best8')lbl='En İyi 8 Üçüncü';
   else lbl=step.label;
   const pct=Math.round((S.currentStep/(STEPS.length-1))*100);
   bar.innerHTML=`
@@ -317,8 +335,9 @@ function stepNav(dir){
 function renderCurrentStep(){
   renderStepBar();
   const step=STEPS[S.currentStep];
-  if(step.type==='group')    renderGroup(step.id);
+  if(step.type==='group')        renderGroup(step.id);
   else if(step.type==='summary') renderSummary();
+  else if(step.type==='best8')   renderBest8();
   else                           renderElim(step.id,step.label,step.n);
 }
 
@@ -334,16 +353,9 @@ function renderGroup(gid){
         <div class="grp-badge">Grup ${gid}</div>
         <button class="btn-fix" onclick="showFixture('${gid}')">📅 Fikstür</button>
       </div>
-      <p class="grp-hint">${locked?'🔒 Tahminler kilitlendi — görüntüleme modunda':'↕ Takımları tahmin sırana göre sürükle-bırak ile sırala'}</p>
+      <p class="grp-hint">${locked?'🔒 Tahminler kilitlendi — görüntüleme modunda':'↕ Sürükle-bırak ile tahmin sıranı belirle'}</p>
       <div class="rank-table">
-        <div class="rank-hdr"><div>#</div><div>Takım</div><div>Durum</div><div>⠿</div></div>
         <div id="rlist-${gid}">${ranking.map((n,i)=>rowHtml(n,i,gid,locked)).join('')}</div>
-      </div>
-      <div class="qual-legend">
-        <div class="ql-item ql-1"><div class="ql-dot"></div>1. sıra — gruptan geçer</div>
-        <div class="ql-item ql-2"><div class="ql-dot"></div>2. sıra — gruptan geçer</div>
-        <div class="ql-item ql-3"><div class="ql-dot"></div>3. sıra — en iyi 3. adayı</div>
-        <div class="ql-item ql-4"><div class="ql-dot"></div>4. sıra — elenir</div>
       </div>
       <div class="page-actions">
         <button class="btn-primary btn-next" onclick="stepNav(1)">
@@ -357,14 +369,23 @@ function renderGroup(gid){
 function rowHtml(name,i,gid,locked){
   const f=getFlag(name);
   const badges=['b-pass','b-pass','b-third','b-out'];
-  const labels=['Geçer ✓','Geçer ✓','En İyi 3.','Elenir'];
+  const labels=['Gruptan Geçer ✓','Gruptan Geçer ✓','En İyi 3. Adayı','Elenir ✗'];
+  const descs=['1. sıra — doğrudan Son 32','2. sıra — doğrudan Son 32','3. sıra — 8\'in seçileceği havuza girer','4. sıra — turnuva bitti'];
   const pclass='pos-'+(i+1);
   return `<div class="rank-row ${pclass}" draggable="${!locked}" data-idx="${i}" data-name="${name}" id="rr-${gid}-${i}"
     ${!locked?`ondragstart="ds(event,'${gid}',${i})" ondragover="dov(event)" ondrop="dp(event,'${gid}')" ondragend="de(event)"`:''}
     ${!locked?`ontouchstart="ts(event,'${gid}')" ontouchmove="tm(event)" ontouchend="te(event,'${gid}')" style="touch-action:none"`:''}
     >
-    <div class="rr-num">${i+1}</div>
-    <div class="rr-team"><span class="rr-flag">${f}</span><span class="rr-name">${name}</span></div>
+    <div class="rr-pos">
+      <div class="rr-num">${i+1}</div>
+    </div>
+    <div class="rr-team">
+      <span class="rr-flag">${f}</span>
+      <div class="rr-info">
+        <div class="rr-name">${name}</div>
+        <div class="rr-desc">${descs[i]}</div>
+      </div>
+    </div>
     <div class="rr-badge ${badges[i]}">${labels[i]}</div>
     <div class="rr-drag">${locked?'':'⠿'}</div>
   </div>`;
@@ -454,7 +475,58 @@ function renderSummary(){
     </div>`;
 }
 
-// ── ELİMİNASYON ───────────────────────────────────────────────
+// ── EN İYİ 8 ÜÇÜNCÜ ──────────────────────────────────────────
+function renderBest8(){
+  const mc=document.getElementById('main-content');
+  const thirds=S.allThirds();
+  const sel=S.preds.best8||[];
+  const locked=IS_LOCKED;
+
+  mc.innerHTML=`
+    <div class="page">
+      <div class="best8-header">
+        <div class="best8-title">🥉 En İyi 8 Üçüncü</div>
+        <div class="best8-sub">12 gruptan 3. sırayı bitiren takımların en iyisi 8 tanesi Son 32'ye girer. Hangilerinin geçeceğini tahmin et.</div>
+      </div>
+      <div class="best8-counter">
+        <div class="b8c-bar">
+          <div class="b8c-fill" id="b8c-fill" style="width:${Math.round(sel.length/8*100)}%"></div>
+        </div>
+        <span class="b8c-txt" id="b8c-txt"><b>${sel.length}</b>/8 seçildi</span>
+      </div>
+      ${locked?`<div class="locked-banner">🔒 Tahminler kilitlendi.</div>`:''}
+      <div class="best8-list" id="best8-list">
+        ${thirds.map(t=>best8Row(t,sel.includes(t.name),locked)).join('')}
+      </div>
+      <div class="page-actions">
+        ${sel.length===8||locked
+          ?`<button class="btn-primary btn-next" onclick="stepNav(1)">Son 32'ye Geç →</button>`
+          :`<p class="pick-warn">⚠️ 8 takım seçmelisin (${8-sel.length} kaldı)</p>`
+        }
+      </div>
+    </div>`;
+}
+
+function best8Row(t,selected,locked){
+  const click=(!locked)?`onclick="toggleBest8('${t.name}')"` :'';
+  return`<div class="b8-row${selected?' b8-sel':''}" ${click} id="b8r-${t.name.replace(/\s/g,'_')}">
+    <div class="b8-left">
+      <span class="b8-flag">${t.flag}</span>
+      <div class="b8-info">
+        <div class="b8-name">${t.name}</div>
+        <div class="b8-group">Grup ${t.gid} — 3. sıra</div>
+      </div>
+    </div>
+    <div class="b8-check">${selected?'✓':''}</div>
+  </div>`;
+}
+
+function toggleBest8(name){
+  if(IS_LOCKED)return;
+  const ok=S.toggleBest8(name);
+  if(!ok){toast('Zaten 8 takım seçtiniz!','err');return;}
+  renderBest8();
+}
 function renderElim(rid,label,n){
   const mc=document.getElementById('main-content');
   const locked=IS_LOCKED;
@@ -514,7 +586,7 @@ async function saveAll(){
   if(!S.user){toast('Önce giriş yapmalısın!','err');return;}
   if(IS_LOCKED){toast('Tahminler kilitlendi.','err');return;}
   try{
-    await DB.savePred(S.user.id,{group_rankings:S.preds.group_rankings,bracket:S.preds.bracket,champion:S.preds.champion});
+    await DB.savePred(S.user.id,{group_rankings:S.preds.group_rankings,bracket:S.preds.bracket,champion:S.preds.champion,best8:S.preds.best8||[]});
     toast('Tahminler kaydedildi ✓');
   }catch(e){toast('Hata: '+e.message,'err');}
 }
@@ -612,7 +684,7 @@ document.addEventListener('DOMContentLoaded', async()=>{
       const user=JSON.parse(saved);
       S.user=user;
       const p=await DB.getPred(user.id);
-      if(p){S.preds.group_rankings=p.group_rankings||{};S.preds.bracket=p.bracket||{};S.preds.champion=p.champion||'';}
+      if(p){S.preds.group_rankings=p.group_rankings||{};S.preds.bracket=p.bracket||{};S.preds.champion=p.champion||'';S.preds.best8=p.best8||[];}
       document.getElementById('splash-screen').style.display='none';
       document.getElementById('main-app').style.display='block';
       updateHeader();
