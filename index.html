@@ -30,7 +30,13 @@
           <button class="stab active" id="stab-login"  onclick="splashTab('login')">Giriş Yap</button>
           <button class="stab"        id="stab-reg"    onclick="splashTab('register')">Kayıt Ol</button>
         </div>
-        <div id="splash-form"></div>
+        <div id="splash-form">
+          <!-- Giriş formu başlangıçta inline — JS yüklenmeden önce de görünür -->
+          <div class="sfield"><label>Kullanıcı Adı</label><input class="sinp" id="su" autocomplete="username" placeholder="kullaniciadi"/></div>
+          <div class="sfield"><label>Şifre</label><div class="pw-row"><input class="sinp" id="sp" type="password" autocomplete="current-password" placeholder="••••••"/><button class="pw-eye" onclick="tpw('sp',this)" type="button">👁</button></div></div>
+          <p class="serr" id="serr"></p>
+          <button class="sbtn" onclick="doSplashLogin()">Giriş Yap →</button>
+        </div>
       </div>
       <p class="splash-note">🔒 Şifreler SHA-256 ile şifrelenir · E-posta gerekmez</p>
     </div>

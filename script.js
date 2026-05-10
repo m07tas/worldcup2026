@@ -284,18 +284,23 @@ function doLogout(){
 }
 
 // ── HEADER ────────────────────────────────────────────────────
+// İlk maç: 11 Haziran 2026, 22:00 Türkiye saati (UTC+3)
+const WC_KICKOFF = new Date('2026-06-11T19:00:00Z'); // 22:00 TR = 19:00 UTC
+
 function updateHeader(){
-  // Geri sayım
   const lock=document.getElementById('hdr-lock');
   if(lock){
-    if(IS_LOCKED){lock.textContent='🔒 Kilitli';}
-    else{
-      const d=LOCK_DATE-new Date();
-      const dd=Math.floor(d/86400000),hh=Math.floor((d%86400000)/3600000),mm=Math.floor((d%3600000)/60000);
-      lock.textContent=`⏳ ${dd}g ${hh}s ${mm}dk kaldı`;
+    const now=new Date();
+    if(now>=WC_KICKOFF){
+      lock.textContent='⚽ Turnuva başladı!';
+    } else {
+      const d=WC_KICKOFF-now;
+      const dd=Math.floor(d/86400000);
+      const hh=Math.floor((d%86400000)/3600000);
+      const mm=Math.floor((d%3600000)/60000);
+      lock.textContent=`⏳ ${dd}g ${hh}s ${mm}dk`;
     }
   }
-  // Kullanıcı chip
   const ua=document.getElementById('hdr-user-area');
   if(ua&&S.user){
     ua.innerHTML=`<div class="hdr-chip"><div class="hdr-av">${S.user.username[0].toUpperCase()}</div><span class="hdr-uname">${S.user.username}</span><button class="hdr-out" onclick="doLogout()">Çıkış</button></div>`;
