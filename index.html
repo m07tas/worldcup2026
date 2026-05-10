@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>FIFA Dünya Kupası 2026 — Tahmin Platformu</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div id="app">
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <span class="header-trophy">🏆</span>
+        <div>
+          <div class="header-title">FIFA Dünya Kupası 2026</div>
+          <div class="header-sub">Tahmin Platformu</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="lock-badge" id="lock-badge">
+          <span class="lock-icon">🔒</span>
+          <span id="lock-txt">Yükleniyor...</span>
+        </div>
+        <div class="user-chip" id="user-chip" style="display:none">
+          <div class="user-chip-avatar" id="chip-avatar">?</div>
+          <span id="chip-name">-</span>
+          <button class="logout-btn" onclick="App.logout()">Çıkış</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="nav" id="main-nav">
+    <button class="nav-btn active" data-tab="tab-auth" onclick="App.showTab('tab-auth')">
+      <span class="nav-icon">👤</span><span class="nav-lbl">Hesap</span>
+    </button>
+    <button class="nav-btn" data-tab="tab-groups" id="nb-groups" disabled onclick="App.showTab('tab-groups')">
+      <span class="nav-icon">⚽</span><span class="nav-lbl">Gruplar</span>
+    </button>
+    <button class="nav-btn" data-tab="tab-bracket" id="nb-bracket" disabled onclick="App.showTab('tab-bracket')">
+      <span class="nav-icon">🥊</span><span class="nav-lbl">Eleme</span>
+    </button>
+    <button class="nav-btn" data-tab="tab-lb" onclick="App.showTab('tab-lb')">
+      <span class="nav-icon">🏅</span><span class="nav-lbl">Liderlik</span>
+    </button>
+    <button class="nav-btn" data-tab="tab-stats" onclick="App.showTab('tab-stats')">
+      <span class="nav-icon">📊</span><span class="nav-lbl">İstatistik</span>
+    </button>
+  </nav>
+
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <div class="modal-bg" id="fixture-modal" onclick="App.closeFixture(event)">
+    <div class="modal-box">
+      <div class="modal-head">
+        <span id="modal-title">Fikstür</span>
+        <button class="modal-close" onclick="App.closeFixture()">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <main class="main">
+
+    <section id="tab-auth" class="tab active">
+      <div class="auth-wrap">
+        <div id="auth-form-wrap">
+          <div class="auth-tabs">
+            <button class="auth-tab active" id="at-login" onclick="Auth.switchMode('login')">Giriş Yap</button>
+            <button class="auth-tab" id="at-reg" onclick="Auth.switchMode('register')">Kayıt Ol</button>
+          </div>
+          <div class="auth-card" id="auth-card-inner"></div>
+          <p class="auth-note">Şifreler güvenli şekilde şifrelenerek saklanır. E-posta gerekmez.</p>
+        </div>
+        <div id="auth-user-wrap" style="display:none">
+          <div class="user-dash">
+            <div class="user-dash-top">
+              <div class="user-big-avatar" id="dash-avatar">?</div>
+              <div>
+                <div class="user-dash-name" id="dash-name">-</div>
+                <div class="user-dash-sub">Hoş geldin!</div>
+              </div>
+              <button class="btn-danger-sm" onclick="App.logout()">Çıkış</button>
+            </div>
+            <div class="dash-stats">
+              <div class="dash-stat"><div class="ds-val" id="my-pts">0</div><div class="ds-lbl">Puanım</div></div>
+              <div class="dash-stat"><div class="ds-val" id="my-rank">—</div><div class="ds-lbl">Sıramım</div></div>
+              <div class="dash-stat"><div class="ds-val" id="my-done">0%</div><div class="ds-lbl">Tamamlama</div></div>
+            </div>
+            <button class="btn-primary full-w" onclick="App.showTab('tab-groups')">Tahminlere Başla →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-groups" class="tab">
+      <div id="groups-unauth" class="unauth-msg" style="display:none">
+        <p>Tahmin yapmak için önce giriş yapmalısın.</p>
+        <button class="btn-primary" onclick="App.showTab('tab-auth')">Giriş Yap</button>
+      </div>
+      <div id="groups-content">
+        <div class="locked-banner" id="groups-lock-banner" style="display:none">
+          🔒 8 Haziran 2026 itibarıyla tahminler kilitlendi. Sadece görüntüleyebilirsin.
+        </div>
+        <div class="group-nav-wrap">
+          <div class="group-nav-header">
+            <div class="group-nav-info">
+              <span class="gni-label">Grup</span>
+              <span class="gni-current" id="gni-current">A</span>
+              <span class="gni-total">/ 12</span>
+            </div>
+            <div class="group-nav-progress-wrap">
+              <div class="gnp-bar"><div class="gnp-fill" id="gnp-fill" style="width:0%"></div></div>
+              <span class="gnp-txt" id="gnp-txt">0/12 grup tamamlandı</span>
+            </div>
+            <div class="group-nav-btns">
+              <button class="gnb" id="gnb-prev" onclick="Groups.prevGroup()" disabled>‹ Önceki</button>
+              <button class="gnb gnb-next" id="gnb-next" onclick="Groups.nextGroup()">Sonraki ›</button>
+            </div>
+          </div>
+          <div class="group-stage-card" id="group-stage-card"></div>
+          <div class="group-dots" id="group-dots"></div>
+        </div>
+        <div class="champ-section">
+          <div class="champ-header">🏆 Şampiyonluk Tahmini</div>
+          <select class="champ-select" id="champ-select" onchange="Groups.onChampChange()">
+            <option value="">— Şampiyonu seç —</option>
+          </select>
+        </div>
+        <div class="save-row">
+          <div class="save-row-info">Tahminlerini kaydet — istersen sonra değiştirebilirsin.</div>
+          <button class="btn-save" id="btn-save-groups" onclick="App.saveAll()">💾 Kaydet</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-bracket" class="tab">
+      <div id="bracket-unauth" class="unauth-msg" style="display:none">
+        <p>Tahmin yapmak için önce giriş yapmalısın.</p>
+        <button class="btn-primary" onclick="App.showTab('tab-auth')">Giriş Yap</button>
+      </div>
+      <div id="bracket-content">
+        <div class="locked-banner" id="bracket-lock-banner" style="display:none">
+          🔒 8 Haziran 2026 itibarıyla tahminler kilitlendi.
+        </div>
+        <div class="bracket-info">
+          💡 Kazananı seçmek için takım adına tıkla. Sonraki turlar otomatik güncellenir.
+        </div>
+        <div class="bracket-scroll-wrap">
+          <div class="bracket-container" id="bracket-container"></div>
+        </div>
+        <div class="save-row">
+          <button class="btn-save" id="btn-save-bracket" onclick="App.saveAll()">💾 Eleme Tahminlerini Kaydet</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-lb" class="tab">
+      <div class="section-head"><h2 class="section-title">Liderlik Tablosu</h2></div>
+      <div class="points-legend">
+        <span class="pl-item"><b>Grup geçişi</b> 2p</span><span class="pl-sep">·</span>
+        <span class="pl-item"><b>Son 32</b> 5p</span><span class="pl-sep">·</span>
+        <span class="pl-item"><b>Çeyrek</b> 7p</span><span class="pl-sep">·</span>
+        <span class="pl-item"><b>Yarı</b> 10p</span><span class="pl-sep">·</span>
+        <span class="pl-item"><b>Final</b> 15p</span><span class="pl-sep">·</span>
+        <span class="pl-item"><b>Şampiyon</b> 20p</span>
+      </div>
+      <div class="lb-table" id="lb-table"><div class="lb-loading">Yükleniyor...</div></div>
+    </section>
+
+    <section id="tab-stats" class="tab">
+      <div class="section-head"><h2 class="section-title">Tahmin İstatistikleri</h2></div>
+      <div class="global-stats" id="global-stats"></div>
+      <div class="stats-section-title">En Çok Seçilen Şampiyonlar</div>
+      <div id="champ-bars"></div>
+      <div class="stats-section-title" style="margin-top:2rem">En Çok Seçilen Grup Geçerleri</div>
+      <div id="adv-bars"></div>
+    </section>
+
+  </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
