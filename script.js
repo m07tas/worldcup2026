@@ -287,6 +287,7 @@ async function onLoginSuccess(user){
   try{
     const p=await DB.getPred(user.id);
     if(p){S.preds.group_rankings=p.group_rankings||{};S.preds.bracket=p.bracket||{};S.preds.champion=p.champion||'';S.preds.best8=p.best8||[];}
+  }catch(e){console.warn('Tahmin yüklenemedi:',e);}
   document.getElementById('splash-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
   updateHeader();
