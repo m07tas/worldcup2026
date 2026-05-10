@@ -6,7 +6,7 @@
 const LOCK_DATE = new Date('2026-06-08T00:00:00');
 const IS_LOCKED = new Date() >= LOCK_DATE;
 const SB_URL    = 'https://jkfhqcygjvuijkjamgyn.supabase.co';
-const SB_KEY    = 'sb_publishable_G-zV5rNtEOmyAgS2B035Ww_vvK0XGSt';
+const SB_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZmhxY3lnanZ1aWpramFtZ3luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MzAwNjMsImV4cCI6MjA5NDAwNjA2M30.6_6QZBGdYiOKpyIGbfuzKfTXsyTifyUSTBHoW5fWmJ8';
 
 const GROUP_IDS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 const ELIM_ROUNDS = [
