@@ -1,70 +1,84 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="dark">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <meta name="theme-color" content="#0b0f1a"/>
+  <meta name="theme-color" content="#0a0e1a"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <title>FIFA 2026 Tahmin</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-
 <div id="app">
 
-  <!-- HEADER -->
-  <header class="header">
-    <div class="header-inner">
-      <div class="hdr-brand">
-        <span class="hdr-logo">🏆</span>
-        <div>
-          <div class="hdr-title">FIFA 2026</div>
-          <div class="hdr-sub">Tahmin Platformu</div>
+  <!-- ══ SPLASH / GİRİŞ EKRANI ══ -->
+  <div id="splash-screen" class="splash">
+    <div class="splash-bg">
+      <div class="splash-orb splash-orb-1"></div>
+      <div class="splash-orb splash-orb-2"></div>
+      <div class="splash-orb splash-orb-3"></div>
+    </div>
+    <div class="splash-content">
+      <div class="splash-trophy">🏆</div>
+      <h1 class="splash-title">FIFA Dünya Kupası</h1>
+      <div class="splash-year">2026</div>
+      <p class="splash-hosts">🇺🇸 ABD &nbsp;·&nbsp; 🇨🇦 Kanada &nbsp;·&nbsp; 🇲🇽 Meksika</p>
+      <p class="splash-sub">11 Haziran – 19 Temmuz 2026 · 48 Takım · 104 Maç</p>
+
+      <div class="splash-card">
+        <div class="splash-tabs">
+          <button class="stab active" id="stab-login"  onclick="splashTab('login')">Giriş Yap</button>
+          <button class="stab"        id="stab-reg"    onclick="splashTab('register')">Kayıt Ol</button>
+        </div>
+        <div id="splash-form"></div>
+      </div>
+      <p class="splash-note">🔒 Şifreler SHA-256 ile şifrelenir · E-posta gerekmez</p>
+    </div>
+  </div>
+
+  <!-- ══ ANA UYGULAMA ══ -->
+  <div id="main-app" style="display:none">
+
+    <header class="header">
+      <div class="header-inner">
+        <div class="hdr-brand">
+          <span class="hdr-logo">🏆</span>
+          <div>
+            <div class="hdr-title">FIFA 2026</div>
+            <div class="hdr-lock" id="hdr-lock">⏳ ...</div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">🌙</button>
+          <div id="hdr-user-area"></div>
         </div>
       </div>
-      <div class="hdr-right">
-        <div class="hdr-lock" id="hdr-lock">⏳ ...</div>
-        <div class="hdr-user" id="hdr-user"></div>
-      </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- STEP BAR (sadece tahmin sekmesinde görünür) -->
-  <div id="step-bar"></div>
+    <div id="step-bar" style="display:none"></div>
 
-  <!-- MAIN CONTENT AREA -->
-  <main class="main">
-    <div id="main-content"></div>
-  </main>
+    <main class="main" id="main-content"></main>
 
-  <!-- BOTTOM NAV -->
-  <nav class="bottom-nav">
-    <button class="tab-btn active" data-tab="predict" onclick="showTab('predict')">
-      <span class="ti">⚽</span>
-      <span>Tahmin</span>
-    </button>
-    <button class="tab-btn" data-tab="leaderboard" onclick="showTab('leaderboard')">
-      <span class="ti">🏅</span>
-      <span>Liderlik</span>
-    </button>
-    <button class="tab-btn" data-tab="stats" onclick="showTab('stats')">
-      <span class="ti">📊</span>
-      <span>İstatistik</span>
-    </button>
-  </nav>
+    <nav class="bottom-nav">
+      <button class="tab-btn active" data-tab="predict"     onclick="showTab('predict')">
+        <span class="ti">⚽</span><span>Tahmin</span>
+      </button>
+      <button class="tab-btn"        data-tab="leaderboard" onclick="showTab('leaderboard')">
+        <span class="ti">🏅</span><span>Liderlik</span>
+      </button>
+      <button class="tab-btn"        data-tab="stats"       onclick="showTab('stats')">
+        <span class="ti">📊</span><span>İstatistik</span>
+      </button>
+    </nav>
 
-  <!-- TOAST -->
+    <button class="save-fab" onclick="saveAll()" title="Kaydet">💾</button>
+  </div>
+
+  <div id="modal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-box" id="modal-box"></div>
+  </div>
   <div id="toast-wrap"></div>
-
-  <!-- MODAL (fikstür vs.) -->
-  <div id="modal"></div>
-
-  <!-- KAYDET BUTONU (sabit, sağ alt) -->
-  <button id="save-fab" onclick="saveAll()" title="Kaydet">💾</button>
-
 </div>
-
 <script src="script.js"></script>
 </body>
 </html>
