@@ -75,9 +75,15 @@ function getFlag(n){for(const g of GROUP_IDS){const t=GROUPS[g].teams.find(x=>x.
 // ── SUPABASE ──────────────────────────────────────────────────
 const DB={
   async r(path,opts={}){
-    const res=await fetch(SB_URL+path,{...opts,headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json',...(opts.headers||{})}});
+    const url = SB_URL+path;
+    console.log('DB request:', opts.method||'GET', url.split('?')[0]);
+    const res=await fetch(url,{...opts,headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json',...(opts.headers||{})}});
     const txt=await res.text();
-    if(!res.ok)throw new Error(JSON.parse(txt)?.message||'DB '+res.status);
+    console.log('DB response status:', res.status, txt.slice(0,200));
+    if(!res.ok){
+      const msg=JSON.parse(txt)?.message||JSON.parse(txt)?.error||'DB hata '+res.status;
+      throw new Error(msg);
+    }
     return txt?JSON.parse(txt):null;
   },
   getUser(u){return this.r(`/rest/v1/users?username=eq.${encodeURIComponent(u)}&select=id,username`);},
@@ -235,31 +241,44 @@ async function doSplashLogin(){
   const p=document.getElementById('sp').value;
   serr('');
   if(!u||!p){serr('Tüm alanları doldur.');return;}
+  serr('Giriş yapılıyor...');
   try{
     const h=await hashPw(p);
+    console.log('Login attempt:', u, 'hash prefix:', h.slice(0,8));
     const res=await DB.login(u,h);
+    console.log('Login response:', res);
     if(!res||!res.length){serr('Kullanıcı adı veya şifre hatalı.');return;}
     await onLoginSuccess(res[0]);
-  }catch(e){serr('Hata: '+e.message);}
+  }catch(e){
+    console.error('Login error:', e);
+    serr('Hata: '+e.message);
+  }
 }
 
 async function doSplashRegister(){
   const u=document.getElementById('su').value.trim();
   const p=document.getElementById('sp').value;
-  const p2=document.getElementById('sp2').value;
+  const p2=document.getElementById('sp2')?document.getElementById('sp2').value:'';
   serr('');
   if(!u||!p){serr('Tüm alanları doldur.');return;}
   if(u.length<3){serr('Kullanıcı adı en az 3 karakter.');return;}
   if(p.length<6){serr('Şifre en az 6 karakter.');return;}
-  if(p!==p2){serr('Şifreler eşleşmiyor.');return;}
+  if(p2&&p!==p2){serr('Şifreler eşleşmiyor.');return;}
+  serr('Kayıt yapılıyor...');
   try{
+    console.log('Register attempt:', u);
     const ex=await DB.getUser(u);
+    console.log('Existing user check:', ex);
     if(ex&&ex.length){serr('Bu kullanıcı adı alınmış.');return;}
     const h=await hashPw(p);
     const res=await DB.create(u,h);
-    if(!res||!res.length){serr('Kayıt başarısız.');return;}
+    console.log('Create response:', res);
+    if(!res||!res.length){serr('Kayıt başarısız. Console\'a bak.');return;}
     await onLoginSuccess(res[0]);
-  }catch(e){serr('Hata: '+e.message);}
+  }catch(e){
+    console.error('Register error:', e);
+    serr('Hata: '+e.message);
+  }
 }
 
 async function onLoginSuccess(user){

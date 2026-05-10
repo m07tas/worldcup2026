@@ -79,7 +79,9 @@ body { background: var(--bg); color: var(--text); }
 /* ── SPLASH ──────────────────────────────────── */
 .splash {
   min-height: 100vh;
-  background: linear-gradient(160deg, var(--splash-bg1) 0%, var(--splash-bg2) 100%);
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,10,3,0.80) 60%, rgba(0,15,5,0.92) 100%),
+    url('arda.jpg') center center / cover no-repeat;
   display: flex; align-items: center; justify-content: center;
   padding: 1rem;
   position: relative; overflow: hidden;
