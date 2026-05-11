@@ -207,7 +207,9 @@ async function doRegister(){
   }catch(e){serr('Hata: '+e.message);}
 }
 async function loginOK(user){
-  S.user=user;sessionStorage.setItem('wc_user',JSON.stringify(user));
+  S.user=user;
+  // localStorage ile kalıcı oturum — tarayıcı kapansa bile hatırlar
+  localStorage.setItem('wc_user',JSON.stringify(user));
   try{
     const p=await DB.getPred(user.id);
     if(p){S.preds.group_rankings=p.group_rankings||{};S.preds.bracket=p.bracket||{};S.preds.champion=p.champion||'';S.preds.best8=p.best8||[];S.preds.team_name=p.team_name||'';S.preds.team_pass=p.team_pass||'';S.preds.team_settings=p.team_settings||{};S.preds.share_public=p.public!==false;}
@@ -218,7 +220,7 @@ async function loginOK(user){
 }
 function doLogout(){
   S.user=null;S.preds={group_rankings:{},bracket:{},champion:'',best8:[],team_name:'',team_pass:'',team_settings:{},share_public:true};S.currentStep=0;
-  sessionStorage.removeItem('wc_user');
+  localStorage.removeItem('wc_user');
   document.getElementById('main-app').style.display='none';
   document.getElementById('splash-screen').style.display='flex';
   _sm='login';renderSplashForm();
@@ -270,6 +272,44 @@ function showMainMenu(){
 }
 
 function startPredict(){
+  setAppMode('menu');
+  const tn=S.preds.team_name;
+  mc().innerHTML=`
+    <div class="page">
+      <button class="back-btn" onclick="showMainMenu()">‹ Ana Menü</button>
+      <div class="sum-title" style="margin-top:12px">⚽ Tahmine Başla</div>
+      <p class="page-sub">Tahminlerin hangi havuza gönderilsin?</p>
+      <div class="menu-cards" style="margin-top:4px">
+
+        <button class="menu-card menu-primary" onclick="goPredict()">
+          <div class="mc-icon">🌍</div>
+          <div class="mc-text"><div class="mc-title">Genel Havuz</div><div class="mc-sub">Herkesin görebileceği genel liderlik tablosuna katıl (kişi başı max 1 tahmin)</div></div>
+          <div class="mc-arr">›</div>
+        </button>
+
+        ${tn?`<button class="menu-card" style="border-color:var(--gold-bd);background:var(--gold-bg)" onclick="goPredict()">
+          <div class="mc-icon">👥</div>
+          <div class="mc-text"><div class="mc-title">${tn} Ekibi ile</div><div class="mc-sub">Mevcut ekibine dahil ederek tahmin yap</div></div>
+          <div class="mc-arr" style="color:var(--gold)">›</div>
+        </button>`:''}
+
+        <button class="menu-card" onclick="showCreateTeamPage()">
+          <div class="mc-icon">🏗️</div>
+          <div class="mc-text"><div class="mc-title">Yeni Ekip Kur</div><div class="mc-sub">Arkadaşlarınla özel ekip oluştur, sadece aramızda yarışalım</div></div>
+          <div class="mc-arr">›</div>
+        </button>
+
+        <button class="menu-card" onclick="showJoinTeamPage()">
+          <div class="mc-icon">🤝</div>
+          <div class="mc-text"><div class="mc-title">Ekibe Katıl</div><div class="mc-sub">Arkadaşının kurduğu ekibe ekip adı ve şifreyle gir</div></div>
+          <div class="mc-arr">›</div>
+        </button>
+
+      </div>
+    </div>`;
+}
+
+function goPredict(){
   setAppMode('predict');
   S.currentStep=0;
   renderCurrentStep();
@@ -473,9 +513,9 @@ function renderStepBar(){
     <div class="sb-center">
       <div class="sb-label">${lbl}</div>
       <div class="sb-prog"><div class="sb-prog-f" style="width:${pct}%"></div></div>
-      <div class="sb-info">Adım ${S.currentStep+1} / ${STEPS.length} · <button class="sb-home-btn" onclick="showMainMenu()">Ana Menü</button></div>
+      <div class="sb-info">Adım ${S.currentStep+1} / ${STEPS.length}</div>
     </div>
-    <div style="width:36px"></div>
+    <button class="sb-home-big" onclick="showMainMenu()">🏠 Ana Menü</button>
   </div>`;
 }
 function stepNav(dir){const n=S.currentStep+dir;if(n<0||n>=STEPS.length)return;S.currentStep=n;renderCurrentStep();}
@@ -713,7 +753,8 @@ async function loadStats(){
 document.addEventListener('DOMContentLoaded',async()=>{
   loadTheme();setInterval(updateHeader,60000);
   document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
-  const saved=sessionStorage.getItem('wc_user');
+  // localStorage — tarayıcı kapansa bile oturumu hatırlar
+  const saved=localStorage.getItem('wc_user');
   if(saved){
     try{
       const user=JSON.parse(saved);S.user=user;
@@ -722,7 +763,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
       document.getElementById('splash-screen').style.display='none';
       document.getElementById('main-app').style.display='block';
       updateHeader();showMainMenu();return;
-    }catch(e){sessionStorage.removeItem('wc_user');}
+    }catch(e){localStorage.removeItem('wc_user');}
   }
   renderSplashForm();
 });

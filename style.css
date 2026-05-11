@@ -787,3 +787,19 @@ body { background: var(--bg); color: var(--text); }
 .fsc-title { font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px; }
 .fsc-champ { font-size:13px;color:var(--text2);margin-bottom:4px; }
 .fsc-champ b { color:var(--gold); }
+
+/* ── BÜYÜK ANA MENÜ BUTONU ───────────────────── */
+.sb-home-big {
+  padding: 7px 12px;
+  background: var(--bg3);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.sb-home-big:hover { background: var(--bg4); color: var(--text); }
+.sb-wrap { gap: 8px !important; }
