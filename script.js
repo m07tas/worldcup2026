@@ -2,11 +2,11 @@
    FIFA 2026 TAHMİN PLATFORMU — script.js
    ============================================================ */
 
-// ── SABITLER ─────────────────────────────────────────────────
 const LOCK_DATE = new Date('2026-06-08T00:00:00');
 const IS_LOCKED = new Date() >= LOCK_DATE;
-const SB_URL    = 'https://jkfhqcygjvuijkjamgyn.supabase.co';
-const SB_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZmhxY3lnanZ1aWpramFtZ3luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MzAwNjMsImV4cCI6MjA5NDAwNjA2M30.6_6QZBGdYiOKpyIGbfuzKfTXsyTifyUSTBHoW5fWmJ8';
+const WC_KICKOFF = new Date('2026-06-11T19:00:00Z');
+const SB_URL = 'https://jkfhqcygjvuijkjamgyn.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZmhxY3lnanZ1aWpramFtZ3luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MzAwNjMsImV4cCI6MjA5NDAwNjA2M30.6_6QZBGdYiOKpyIGbfuzKfTXsyTifyUSTBHoW5fWmJ8';
 
 const GROUP_IDS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 const ELIM_ROUNDS = [
@@ -22,27 +22,28 @@ const STEPS = [
   {type:'best8'},
   ...ELIM_ROUNDS.map(r => ({type:'elim',...r})),
 ];
-// Son 32 resmi eşleşmeleri
+
+// Son 32 resmi eşleşmeler - her 3rd kaynağa sıra numarası atıyoruz
+let _thirdSlot = 0;
 const R32 = [
   [{g:'A',p:2},{g:'B',p:2}],
   [{g:'C',p:1},{g:'F',p:2}],
-  [{g:'E',p:1},{t:'3rd',lb:'3. (A/C/E/F/H/I)'}],
+  [{g:'E',p:1},{t:'3rd',slot:0}],
   [{g:'F',p:1},{g:'C',p:2}],
   [{g:'E',p:2},{g:'I',p:2}],
-  [{g:'I',p:1},{t:'3rd',lb:'3. (C/D/F/G/H)'}],
-  [{g:'A',p:1},{t:'3rd',lb:'3. (C/E/F/H/I)'}],
-  [{g:'L',p:1},{t:'3rd',lb:'3. (E/H/I/J/K)'}],
-  [{g:'G',p:1},{t:'3rd',lb:'3. (A/E/H/I/J)'}],
-  [{g:'D',p:1},{t:'3rd',lb:'3. (B/E/F/I/J)'}],
+  [{g:'I',p:1},{t:'3rd',slot:1}],
+  [{g:'A',p:1},{t:'3rd',slot:2}],
+  [{g:'L',p:1},{t:'3rd',slot:3}],
+  [{g:'G',p:1},{t:'3rd',slot:4}],
+  [{g:'D',p:1},{t:'3rd',slot:5}],
   [{g:'H',p:1},{g:'J',p:2}],
   [{g:'K',p:2},{g:'L',p:2}],
-  [{g:'B',p:1},{t:'3rd',lb:'3. (E/F/G/I/J)'}],
+  [{g:'B',p:1},{t:'3rd',slot:6}],
   [{g:'D',p:2},{g:'G',p:2}],
   [{g:'J',p:1},{g:'H',p:2}],
-  [{g:'K',p:1},{t:'3rd',lb:'3. (D/I/J/K/L)'}],
+  [{g:'K',p:1},{t:'3rd',slot:7}],
 ];
 
-// ── GRUP & FİKSTÜR VERİSİ ────────────────────────────────────
 const GROUPS = {
   A:{teams:[{n:'Meksika',f:'🇲🇽'},{n:'Güney Kore',f:'🇰🇷'},{n:'Güney Afrika',f:'🇿🇦'},{n:'Çekya',f:'🇨🇿'}],
      fx:[{h:'Meksika',a:'Güney Afrika',d:'11 Haz',v:'Estadio Azteca'},{h:'Güney Kore',a:'Çekya',d:'11 Haz',v:'Estadio Akron'},{h:'Çekya',a:'Güney Afrika',d:'18 Haz',v:'Mercedes-Benz Stadium'},{h:'Meksika',a:'Güney Kore',d:'18 Haz',v:'Estadio Akron'},{h:'Çekya',a:'Meksika',d:'24 Haz',v:'Estadio Azteca'},{h:'Güney Afrika',a:'Güney Kore',d:'24 Haz',v:'Estadio BBVA'}]},
@@ -75,19 +76,13 @@ function getFlag(n){for(const g of GROUP_IDS){const t=GROUPS[g].teams.find(x=>x.
 // ── SUPABASE ──────────────────────────────────────────────────
 const DB={
   async r(path,opts={}){
-    const url = SB_URL+path;
-    console.log('DB request:', opts.method||'GET', url.split('?')[0]);
-    const res=await fetch(url,{...opts,headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json',...(opts.headers||{})}});
+    const res=await fetch(SB_URL+path,{...opts,headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json',...(opts.headers||{})}});
     const txt=await res.text();
-    console.log('DB response status:', res.status, txt.slice(0,200));
-    if(!res.ok){
-      const msg=JSON.parse(txt)?.message||JSON.parse(txt)?.error||'DB hata '+res.status;
-      throw new Error(msg);
-    }
+    if(!res.ok){let m='DB hata '+res.status;try{const j=JSON.parse(txt);m=j.message||j.error||m;}catch(e){}throw new Error(m);}
     return txt?JSON.parse(txt):null;
   },
   getUser(u){return this.r(`/rest/v1/users?username=eq.${encodeURIComponent(u)}&select=id,username`);},
-  login(u,h){return this.r(`/rest/v1/users?username=eq.${encodeURIComponent(u)}&password_hash=eq.${h}&select=id,username`);},
+  login(u,h){return this.r(`/rest/v1/users?username=eq.${encodeURIComponent(u)}&password_hash=eq.${h}&select=id,username,team_id`);},
   create(u,h){return this.r('/rest/v1/users',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({username:u,password_hash:h})});},
   async getPred(uid){const d=await this.r(`/rest/v1/predictions?user_id=eq.${uid}&select=*`);return d&&d[0];},
   async savePred(uid,payload){
@@ -96,7 +91,10 @@ const DB={
     if(ex&&ex.length)return this.r(`/rest/v1/predictions?user_id=eq.${uid}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body});
     return this.r('/rest/v1/predictions',{method:'POST',headers:{'Prefer':'return=minimal'},body});
   },
-  allUsers(){return this.r('/rest/v1/users?select=id,username');},
+  getTeam(name){return this.r(`/rest/v1/teams?name=eq.${encodeURIComponent(name)}&select=id,name`);},
+  createTeam(name,ownerId){return this.r('/rest/v1/teams',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({name,owner_id:ownerId})});},
+  joinTeam(userId,teamId){return this.r(`/rest/v1/users?id=eq.${userId}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({team_id:teamId})});},
+  allUsers(){return this.r('/rest/v1/users?select=id,username,team_id');},
   allPreds(){return this.r('/rest/v1/predictions?select=user_id,group_rankings,bracket,champion');},
 };
 
@@ -110,41 +108,34 @@ const S={
   user:null,
   preds:{group_rankings:{},bracket:{},champion:'',best8:[]},
   currentStep:0,
-
   ranking(g){const r=this.preds.group_rankings[g];return(r&&r.length===4)?[...r]:GROUPS[g].teams.map(t=>t.n);},
   setRanking(g,arr){this.preds.group_rankings[g]=arr;},
-  isGroupDone(g){
-    const r=this.preds.group_rankings[g];
-    if(!r||r.length<4)return false;
-    return r.some((t,i)=>t!==GROUPS[g].teams[i].n);
-  },
+  isGroupDone(g){const r=this.preds.group_rankings[g];if(!r||r.length<4)return false;return r.some((t,i)=>t!==GROUPS[g].teams[i].n);},
   doneCount(){return GROUP_IDS.filter(g=>this.isGroupDone(g)).length;},
-  // Tüm grupların 3. sırası
   allThirds(){return GROUP_IDS.map(g=>({gid:g,name:this.ranking(g)[2],flag:getFlag(this.ranking(g)[2])}));},
   toggleBest8(name){
+    if(IS_LOCKED)return false;
     const b=this.preds.best8||[];
     const idx=b.indexOf(name);
     if(idx>=0){b.splice(idx,1);}
     else if(b.length<8){b.push(name);}
-    else{return false;}// 8 dolu
+    else{return false;}
     this.preds.best8=b;
     return true;
   },
-  isBest8(name){return(this.preds.best8||[]).includes(name);},
+  // R32 için: her 3rd slotuna best8 listesinden sırayla takım ata
   r32team(src){
     if(src.t==='3rd'){
-      // Best8'den sırayla doldur
       const b=this.preds.best8||[];
-      const idx=src.slot||0;
-      const n=b[idx];
-      return n?{n,f:getFlag(n),tbd:false}:{n:'En İyi 3.',f:'❓',tbd:true};
+      const team=b[src.slot];
+      return team?{n:team,f:getFlag(team),tbd:false}:{n:'En İyi 3. #'+(src.slot+1),f:'❓',tbd:true};
     }
     const r=this.ranking(src.g);
     const n=r[src.p-1];
     return n?{n,f:getFlag(n),tbd:false}:{n:'TBD',f:'❓',tbd:true};
   },
   matchTeams(rid,mi){
-    if(rid==='r32'){const p=R32[mi];return p.map(s=>this.r32team(s));}
+    if(rid==='r32'){return R32[mi].map(s=>this.r32team(s));}
     const order=['r32','r16','qf','sf','final'];
     const prev=order[order.indexOf(rid)-1];
     const w=this.preds.bracket[prev]||[];
@@ -187,18 +178,16 @@ function toast(msg,type='ok'){
   setTimeout(()=>el.remove(),3000);
 }
 
-// ── MODAL ─────────────────────────────────────────────────────
 function openModal(html){
-  const m=document.getElementById('modal');
   document.getElementById('modal-box').innerHTML=html;
-  m.classList.add('open');
+  document.getElementById('modal').classList.add('open');
 }
 function closeModal(e){
   if(!e||e.target===document.getElementById('modal'))
     document.getElementById('modal').classList.remove('open');
 }
 
-// ── SPLASH / LOGIN ────────────────────────────────────────────
+// ── SPLASH ────────────────────────────────────────────────────
 let _sMode='login';
 
 function splashTab(mode){
@@ -215,16 +204,14 @@ function renderSplashForm(){
       <div class="sfield"><label>Kullanıcı Adı</label><input class="sinp" id="su" autocomplete="username" placeholder="kullaniciadi"/></div>
       <div class="sfield"><label>Şifre</label><div class="pw-row"><input class="sinp" id="sp" type="password" autocomplete="current-password" placeholder="••••••"/><button class="pw-eye" onclick="tpw('sp',this)" type="button">👁</button></div></div>
       <p class="serr" id="serr"></p>
-      <button class="sbtn" onclick="doSplashLogin()">Giriş Yap →</button>
-    `;
-  } else {
+      <button class="sbtn" onclick="doSplashLogin()">Giriş Yap →</button>`;
+  }else{
     f.innerHTML=`
       <div class="sfield"><label>Kullanıcı Adı <small>(min 3)</small></label><input class="sinp" id="su" autocomplete="username" placeholder="kullaniciadi"/></div>
       <div class="sfield"><label>Şifre <small>(min 6)</small></label><div class="pw-row"><input class="sinp" id="sp" type="password" autocomplete="new-password" placeholder="••••••"/><button class="pw-eye" onclick="tpw('sp',this)" type="button">👁</button></div></div>
       <div class="sfield"><label>Şifre Tekrar</label><div class="pw-row"><input class="sinp" id="sp2" type="password" autocomplete="new-password" placeholder="••••••"/><button class="pw-eye" onclick="tpw('sp2',this)" type="button">👁</button></div></div>
       <p class="serr" id="serr"></p>
-      <button class="sbtn" onclick="doSplashRegister()">Kayıt Ol →</button>
-    `;
+      <button class="sbtn" onclick="doSplashRegister()">Kayıt Ol →</button>`;
   }
 }
 
@@ -233,7 +220,6 @@ function tpw(id,btn){
   el.type=el.type==='password'?'text':'password';
   btn.textContent=el.type==='password'?'👁':'🙈';
 }
-
 function serr(msg){const el=document.getElementById('serr');if(el)el.textContent=msg;}
 
 async function doSplashLogin(){
@@ -244,15 +230,10 @@ async function doSplashLogin(){
   serr('Giriş yapılıyor...');
   try{
     const h=await hashPw(p);
-    console.log('Login attempt:', u, 'hash prefix:', h.slice(0,8));
     const res=await DB.login(u,h);
-    console.log('Login response:', res);
     if(!res||!res.length){serr('Kullanıcı adı veya şifre hatalı.');return;}
     await onLoginSuccess(res[0]);
-  }catch(e){
-    console.error('Login error:', e);
-    serr('Hata: '+e.message);
-  }
+  }catch(e){serr('Hata: '+e.message);}
 }
 
 async function doSplashRegister(){
@@ -264,21 +245,15 @@ async function doSplashRegister(){
   if(u.length<3){serr('Kullanıcı adı en az 3 karakter.');return;}
   if(p.length<6){serr('Şifre en az 6 karakter.');return;}
   if(p2&&p!==p2){serr('Şifreler eşleşmiyor.');return;}
-  serr('Kayıt yapılıyor...');
+  serr('Kontrol ediliyor...');
   try{
-    console.log('Register attempt:', u);
     const ex=await DB.getUser(u);
-    console.log('Existing user check:', ex);
-    if(ex&&ex.length){serr('Bu kullanıcı adı alınmış.');return;}
+    if(ex&&ex.length){serr('Bu kullanıcı adı alınmış, başka bir ad seç.');return;}
     const h=await hashPw(p);
     const res=await DB.create(u,h);
-    console.log('Create response:', res);
-    if(!res||!res.length){serr('Kayıt başarısız. Console\'a bak.');return;}
+    if(!res||!res.length){serr('Kayıt başarısız.');return;}
     await onLoginSuccess(res[0]);
-  }catch(e){
-    console.error('Register error:', e);
-    serr('Hata: '+e.message);
-  }
+  }catch(e){serr('Hata: '+e.message);}
 }
 
 async function onLoginSuccess(user){
@@ -286,7 +261,12 @@ async function onLoginSuccess(user){
   sessionStorage.setItem('wc_user',JSON.stringify(user));
   try{
     const p=await DB.getPred(user.id);
-    if(p){S.preds.group_rankings=p.group_rankings||{};S.preds.bracket=p.bracket||{};S.preds.champion=p.champion||'';S.preds.best8=p.best8||[];}
+    if(p){
+      S.preds.group_rankings=p.group_rankings||{};
+      S.preds.bracket=p.bracket||{};
+      S.preds.champion=p.champion||'';
+      S.preds.best8=p.best8||[];
+    }
   }catch(e){console.warn('Tahmin yüklenemedi:',e);}
   document.getElementById('splash-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
@@ -296,28 +276,25 @@ async function onLoginSuccess(user){
 }
 
 function doLogout(){
-  S.user=null;S.preds={group_rankings:{},bracket:{},champion:'',best8:[]};
+  S.user=null;
+  S.preds={group_rankings:{},bracket:{},champion:'',best8:[]};
+  S.currentStep=0;
   sessionStorage.removeItem('wc_user');
   document.getElementById('main-app').style.display='none';
   document.getElementById('splash-screen').style.display='flex';
+  _sMode='login';
   renderSplashForm();
 }
 
 // ── HEADER ────────────────────────────────────────────────────
-// İlk maç: 11 Haziran 2026, 22:00 Türkiye saati (UTC+3)
-const WC_KICKOFF = new Date('2026-06-11T19:00:00Z'); // 22:00 TR = 19:00 UTC
-
 function updateHeader(){
   const lock=document.getElementById('hdr-lock');
   if(lock){
     const now=new Date();
-    if(now>=WC_KICKOFF){
-      lock.textContent='⚽ Turnuva başladı!';
-    } else {
+    if(now>=WC_KICKOFF){lock.textContent='⚽ Turnuva başladı!';}
+    else{
       const d=WC_KICKOFF-now;
-      const dd=Math.floor(d/86400000);
-      const hh=Math.floor((d%86400000)/3600000);
-      const mm=Math.floor((d%3600000)/60000);
+      const dd=Math.floor(d/86400000),hh=Math.floor((d%86400000)/3600000),mm=Math.floor((d%3600000)/60000);
       lock.textContent=`⏳ ${dd}g ${hh}s ${mm}dk`;
     }
   }
@@ -356,7 +333,6 @@ function stepNav(dir){
   renderCurrentStep();
 }
 
-// ── ANA RENDER ────────────────────────────────────────────────
 function renderCurrentStep(){
   renderStepBar();
   const step=STEPS[S.currentStep];
@@ -366,25 +342,26 @@ function renderCurrentStep(){
   else                           renderElim(step.id,step.label,step.n);
 }
 
-// ── GRUP SAYFASI ──────────────────────────────────────────────
+// ── GRUP ──────────────────────────────────────────────────────
 function renderGroup(gid){
   const mc=document.getElementById('main-content');
   const ranking=S.ranking(gid);
   const locked=IS_LOCKED;
-  const isLast=S.currentStep===GROUP_IDS.length-1;
+  const gIdx=GROUP_IDS.indexOf(gid);
+  const isLast=gIdx===GROUP_IDS.length-1;
   mc.innerHTML=`
     <div class="page">
       <div class="grp-topbar">
         <div class="grp-badge">Grup ${gid}</div>
         <button class="btn-fix" onclick="showFixture('${gid}')">📅 Fikstür</button>
       </div>
-      <p class="grp-hint">${locked?'🔒 Tahminler kilitlendi — görüntüleme modunda':'↕ Sürükle-bırak ile tahmin sıranı belirle'}</p>
+      <p class="grp-hint">${locked?'🔒 Tahminler kilitlendi':'↕ Sürükle-bırak ile tahmin sıranı belirle'}</p>
       <div class="rank-table">
         <div id="rlist-${gid}">${ranking.map((n,i)=>rowHtml(n,i,gid,locked)).join('')}</div>
       </div>
       <div class="page-actions">
         <button class="btn-primary btn-next" onclick="stepNav(1)">
-          ${isLast?'Özete Git →':'Grup '+GROUP_IDS[GROUP_IDS.indexOf(gid)+1]+' →'}
+          ${isLast?'Özete Git →':'Grup '+GROUP_IDS[gIdx+1]+' →'}
         </button>
       </div>
     </div>`;
@@ -395,15 +372,12 @@ function rowHtml(name,i,gid,locked){
   const f=getFlag(name);
   const badges=['b-pass','b-pass','b-third','b-out'];
   const labels=['Gruptan Geçer ✓','Gruptan Geçer ✓','En İyi 3. Adayı','Elenir ✗'];
-  const descs=['1. sıra — doğrudan Son 32','2. sıra — doğrudan Son 32','3. sıra — 8\'in seçileceği havuza girer','4. sıra — turnuva bitti'];
-  const pclass='pos-'+(i+1);
-  return `<div class="rank-row ${pclass}" draggable="${!locked}" data-idx="${i}" data-name="${name}" id="rr-${gid}-${i}"
-    ${!locked?`ondragstart="ds(event,'${gid}',${i})" ondragover="dov(event)" ondrop="dp(event,'${gid}')" ondragend="de(event)"`:''}
-    ${!locked?`ontouchstart="ts(event,'${gid}')" ontouchmove="tm(event)" ontouchend="te(event,'${gid}')" style="touch-action:none"`:''}
+  const descs=['1. sıra — Son 32\'ye gider','2. sıra — Son 32\'ye gider','3. sıra — En iyi 8 havuzuna girer','4. sıra — turnuva bitti'];
+  return `<div class="rank-row pos-${i+1}" draggable="${!locked}" data-idx="${i}" data-name="${name}"
+    ${!locked?`ondragstart="ds(event,'${gid}',${i})" ondragover="dov(event)" ondrop="dp(event,'${gid}')" ondragend="de()"
+    ontouchstart="ts(event,'${gid}')" ontouchmove="tm(event)" ontouchend="te(event,'${gid}')" style="touch-action:none"`:''}
     >
-    <div class="rr-pos">
-      <div class="rr-num">${i+1}</div>
-    </div>
+    <div class="rr-num">${i+1}</div>
     <div class="rr-team">
       <span class="rr-flag">${f}</span>
       <div class="rr-info">
@@ -416,35 +390,31 @@ function rowHtml(name,i,gid,locked){
   </div>`;
 }
 
-// Drag & Drop
-let _dg=null,_di=null;
-function initDrag(gid){/* events set inline */}
+// drag & drop
+let _dg=null,_di=null,_tr=null,_tg=null;
+function initDrag(){}
 function ds(e,gid,idx){_dg=gid;_di=idx;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
 function dov(e){e.preventDefault();const t=e.target.closest('.rank-row');if(t){document.querySelectorAll('.rank-row').forEach(r=>r.classList.remove('drag-over'));t.classList.add('drag-over');}}
-function de(e){document.querySelectorAll('.rank-row').forEach(r=>r.classList.remove('dragging','drag-over'));}
+function de(){document.querySelectorAll('.rank-row').forEach(r=>r.classList.remove('dragging','drag-over'));}
 function dp(e,gid){
-  e.preventDefault();de(e);
+  e.preventDefault();de();
   const t=e.target.closest('.rank-row');
   if(!t||_dg!==gid)return;
   const ti=parseInt(t.dataset.idx);
   if(_di===ti)return;
-  const r=S.ranking(gid);
-  const[m]=r.splice(_di,1);r.splice(ti,0,m);
+  const r=S.ranking(gid);const[m]=r.splice(_di,1);r.splice(ti,0,m);
   S.setRanking(gid,r);renderGroup(gid);
 }
-// Touch
-let _tr=null,_tg=null,_ty=0;
-function ts(e,gid){_tr=e.currentTarget;_tg=gid;_ty=e.touches[0].clientY;_tr.classList.add('dragging');}
+function ts(e,gid){_tr=e.currentTarget;_tg=gid;_tr.classList.add('dragging');}
 function tm(e){
   if(!_tr)return;e.preventDefault();
-  const y=e.touches[0].clientY;
   document.querySelectorAll('.rank-row').forEach(r=>r.classList.remove('drag-over'));
-  const el=document.elementFromPoint(e.touches[0].clientX,y);
+  const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
   const t=el?.closest('.rank-row');
   if(t&&t!==_tr)t.classList.add('drag-over');
 }
 function te(e,gid){
-  if(!_tr){return;}
+  if(!_tr)return;
   const rows=Array.from(_tr.parentNode.querySelectorAll('.rank-row'));
   const tgt=rows.find(r=>r.classList.contains('drag-over'));
   rows.forEach(r=>r.classList.remove('dragging','drag-over'));
@@ -474,13 +444,13 @@ function showFixture(gid){
     </div>`);
 }
 
-// ── ÖZET SAYFASI ──────────────────────────────────────────────
+// ── ÖZET ──────────────────────────────────────────────────────
 function renderSummary(){
   const mc=document.getElementById('main-content');
   mc.innerHTML=`
     <div class="page">
       <div class="sum-title">📋 Grup Özeti</div>
-      <p class="sum-sub">${S.doneCount()}/12 grup özelleştirildi · 1. ve 2. sıralar gruptan geçer</p>
+      <p class="sum-sub">${S.doneCount()}/12 grup özelleştirildi</p>
       <div class="sum-table">
         ${GROUP_IDS.map(gid=>{
           const r=S.ranking(gid);
@@ -495,7 +465,7 @@ function renderSummary(){
         }).join('')}
       </div>
       <div class="page-actions">
-        <button class="btn-primary btn-next" onclick="stepNav(1)">Son 32'ye Geç →</button>
+        <button class="btn-primary btn-next" onclick="stepNav(1)">En İyi 8 Üçüncüyü Seç →</button>
       </div>
     </div>`;
 }
@@ -506,52 +476,45 @@ function renderBest8(){
   const thirds=S.allThirds();
   const sel=S.preds.best8||[];
   const locked=IS_LOCKED;
-
   mc.innerHTML=`
     <div class="page">
       <div class="best8-header">
         <div class="best8-title">🥉 En İyi 8 Üçüncü</div>
-        <div class="best8-sub">12 gruptan 3. sırayı bitiren takımların en iyisi 8 tanesi Son 32'ye girer. Hangilerinin geçeceğini tahmin et.</div>
+        <div class="best8-sub">12 gruptan 3. sırayı bitiren takımların en iyisi 8 tanesi Son 32'ye katılır. Hangilerinin geçeceğini tahmin et.</div>
       </div>
       <div class="best8-counter">
-        <div class="b8c-bar">
-          <div class="b8c-fill" id="b8c-fill" style="width:${Math.round(sel.length/8*100)}%"></div>
-        </div>
-        <span class="b8c-txt" id="b8c-txt"><b>${sel.length}</b>/8 seçildi</span>
+        <div class="b8c-bar"><div class="b8c-fill" style="width:${Math.round(sel.length/8*100)}%"></div></div>
+        <span class="b8c-txt"><b>${sel.length}</b>/8 seçildi</span>
       </div>
       ${locked?`<div class="locked-banner">🔒 Tahminler kilitlendi.</div>`:''}
-      <div class="best8-list" id="best8-list">
-        ${thirds.map(t=>best8Row(t,sel.includes(t.name),locked)).join('')}
+      <div class="best8-list">
+        ${thirds.map(t=>`
+          <div class="b8-row${sel.includes(t.name)?' b8-sel':''}" ${!locked?`onclick="toggleBest8('${t.name.replace(/'/g,"\\'")}')"`:''}">
+            <div class="b8-left">
+              <span class="b8-flag">${t.flag}</span>
+              <div class="b8-info">
+                <div class="b8-name">${t.name}</div>
+                <div class="b8-group">Grup ${t.gid} — 3. sıra</div>
+              </div>
+            </div>
+            <div class="b8-check">${sel.includes(t.name)?'✓':''}</div>
+          </div>`).join('')}
       </div>
       <div class="page-actions">
         ${sel.length===8||locked
           ?`<button class="btn-primary btn-next" onclick="stepNav(1)">Son 32'ye Geç →</button>`
-          :`<p class="pick-warn">⚠️ 8 takım seçmelisin (${8-sel.length} kaldı)</p>`
-        }
+          :`<p class="pick-warn">⚠️ 8 takım seçmelisin (${8-sel.length} kaldı)</p>`}
       </div>
     </div>`;
 }
 
-function best8Row(t,selected,locked){
-  const click=(!locked)?`onclick="toggleBest8('${t.name}')"` :'';
-  return`<div class="b8-row${selected?' b8-sel':''}" ${click} id="b8r-${t.name.replace(/\s/g,'_')}">
-    <div class="b8-left">
-      <span class="b8-flag">${t.flag}</span>
-      <div class="b8-info">
-        <div class="b8-name">${t.name}</div>
-        <div class="b8-group">Grup ${t.gid} — 3. sıra</div>
-      </div>
-    </div>
-    <div class="b8-check">${selected?'✓':''}</div>
-  </div>`;
-}
-
 function toggleBest8(name){
   if(IS_LOCKED)return;
-  const ok=S.toggleBest8(name);
-  if(!ok){toast('Zaten 8 takım seçtiniz!','err');return;}
+  if(!S.toggleBest8(name)){toast('Zaten 8 takım seçtiniz!','err');return;}
   renderBest8();
 }
+
+// ── ELİMİNASYON ───────────────────────────────────────────────
 function renderElim(rid,label,n){
   const mc=document.getElementById('main-content');
   const locked=IS_LOCKED;
@@ -561,40 +524,39 @@ function renderElim(rid,label,n){
   });
   const allDone=matches.every(m=>m.w);
   const isLast=S.currentStep===STEPS.length-1;
-
   mc.innerHTML=`
     <div class="page">
       <div class="elim-title">${label}</div>
       <div class="elim-sub">${n} maç · ${rid==='final'?'Şampiyonu belirle':'Kazananı seçmek için tıkla'}</div>
-      ${locked?`<div class="locked-banner">🔒 8 Haziran 2026 itibarıyla tahminler kilitlendi.</div>`:''}
+      ${locked?`<div class="locked-banner">🔒 8 Haziran'dan itibaren tahminler kilitlendi.</div>`:''}
       <div class="matches-list">
         ${matches.map(m=>matchHtml(m,rid,locked)).join('')}
       </div>
       <div class="page-actions">
         ${allDone||locked
-          ?`<button class="btn-primary btn-next" onclick="${isLast?'saveAll()':'stepNav(1)'}">${isLast?'💾 Tahminleri Kaydet':'Sonraki Tur →'}</button>`
+          ?`<button class="btn-primary btn-next" onclick="${isLast?'saveAll()':'stepNav(1)'}">
+              ${isLast?'💾 Tahminleri Kaydet':'Sonraki Tur →'}
+            </button>`
           :`<p class="pick-warn">⚠️ Devam etmek için tüm kazananları seç</p>`}
       </div>
     </div>`;
 }
 
 function matchHtml(m,rid,locked){
-  const mc=(t,isW,isTbd)=>{
-    const click=(!isTbd&&!locked)?`onclick="pick('${rid}',${m.i},'${(t.n).replace(/'/g,"\\'")}')"` :'';
-    return`<div class="match-team${isW?' winner':''}${isTbd?' tbd':''}${locked?' no-pick':''}" ${click}>
-      <span class="mt-flag">${t.f}</span>
-      <span class="mt-name">${t.n}</span>
-      ${isW?'<span class="mt-check">✓</span>':''}
-    </div>`;
-  };
   const t1=m.t1||{n:'TBD',f:'❓',tbd:true};
   const t2=m.t2||{n:'TBD',f:'❓',tbd:true};
+  const tm=(t,isW)=>`<div class="match-team${isW?' winner':''}${t.tbd?' tbd':''}${locked?' no-pick':''}"
+    ${!t.tbd&&!locked?`onclick="pick('${rid}',${m.i},'${t.n.replace(/'/g,"\\'")}')"`:''}">
+    <span class="mt-flag">${t.f}</span>
+    <span class="mt-name">${t.n}</span>
+    ${isW?'<span class="mt-check">✓</span>':''}
+  </div>`;
   return`<div class="match-card${m.w?' won':''}">
     <div class="match-num">Maç ${m.i+1}${rid==='final'?' · 🏆 Şampiyonu Belirle':''}</div>
     <div class="match-teams">
-      ${mc(t1,m.w===t1.n,t1.tbd)}
+      ${tm(t1,m.w===t1.n)}
       <div class="match-vs">VS</div>
-      ${mc(t2,m.w===t2.n,t2.tbd)}
+      ${tm(t2,m.w===t2.n)}
     </div>
   </div>`;
 }
@@ -606,12 +568,83 @@ function pick(rid,mi,team){
   renderElim(STEPS[S.currentStep].id,STEPS[S.currentStep].label,STEPS[S.currentStep].n);
 }
 
+// ── EKİP SİSTEMİ ──────────────────────────────────────────────
+function showTeamModal(){
+  openModal(`
+    <div class="modal-head"><span>👥 Ekip</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="team-opts">
+        <button class="team-opt-btn" onclick="showCreateTeam()">➕ Yeni Ekip Oluştur</button>
+        <button class="team-opt-btn" onclick="showJoinTeam()">🔗 Ekibe Katıl</button>
+      </div>
+    </div>`);
+}
+
+function showCreateTeam(){
+  document.getElementById('modal-box').innerHTML=`
+    <div class="modal-head"><span>➕ Ekip Oluştur</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="sfield"><label>Ekip Adı</label><input class="sinp" id="team-name-inp" placeholder="Ekip adı gir"/></div>
+      <p class="serr" id="team-err"></p>
+      <button class="sbtn" onclick="doCreateTeam()">Oluştur →</button>
+    </div>`;
+}
+
+async function doCreateTeam(){
+  const name=document.getElementById('team-name-inp').value.trim();
+  const err=document.getElementById('team-err');
+  if(!name){err.textContent='Ekip adı gir.';return;}
+  if(name.length<2){err.textContent='En az 2 karakter.';return;}
+  err.textContent='Kontrol ediliyor...';
+  try{
+    const ex=await DB.getTeam(name);
+    if(ex&&ex.length){err.textContent='Bu ekip adı alınmış, başka bir ad seç.';return;}
+    const res=await DB.createTeam(name,S.user.id);
+    if(!res||!res.length){err.textContent='Oluşturulamadı.';return;}
+    await DB.joinTeam(S.user.id,res[0].id);
+    S.user.team_id=res[0].id;
+    S.user.team_name=name;
+    closeModal();
+    toast('Ekip oluşturuldu: '+name+' 🎉');
+  }catch(e){err.textContent='Hata: '+e.message;}
+}
+
+function showJoinTeam(){
+  document.getElementById('modal-box').innerHTML=`
+    <div class="modal-head"><span>🔗 Ekibe Katıl</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="sfield"><label>Ekip Adı</label><input class="sinp" id="team-name-inp" placeholder="Katılmak istediğin ekip"/></div>
+      <p class="serr" id="team-err"></p>
+      <button class="sbtn" onclick="doJoinTeam()">Katıl →</button>
+    </div>`;
+}
+
+async function doJoinTeam(){
+  const name=document.getElementById('team-name-inp').value.trim();
+  const err=document.getElementById('team-err');
+  if(!name){err.textContent='Ekip adı gir.';return;}
+  try{
+    const ex=await DB.getTeam(name);
+    if(!ex||!ex.length){err.textContent='Bu isimde ekip bulunamadı.';return;}
+    await DB.joinTeam(S.user.id,ex[0].id);
+    S.user.team_id=ex[0].id;
+    S.user.team_name=name;
+    closeModal();
+    toast('Ekibe katıldın: '+name+' 🎉');
+  }catch(e){err.textContent='Hata: '+e.message;}
+}
+
 // ── KAYDET ────────────────────────────────────────────────────
 async function saveAll(){
   if(!S.user){toast('Önce giriş yapmalısın!','err');return;}
   if(IS_LOCKED){toast('Tahminler kilitlendi.','err');return;}
   try{
-    await DB.savePred(S.user.id,{group_rankings:S.preds.group_rankings,bracket:S.preds.bracket,champion:S.preds.champion,best8:S.preds.best8||[]});
+    await DB.savePred(S.user.id,{
+      group_rankings:S.preds.group_rankings,
+      bracket:S.preds.bracket,
+      champion:S.preds.champion,
+      best8:S.preds.best8||[],
+    });
     toast('Tahminler kaydedildi ✓');
   }catch(e){toast('Hata: '+e.message,'err');}
 }
@@ -623,7 +656,7 @@ function showTab(tab){
   if(tab==='predict'){
     bar.style.display='block';
     renderCurrentStep();
-  } else {
+  }else{
     bar.style.display='none';
     if(tab==='leaderboard')renderLeaderboard();
     else renderStats();
@@ -632,8 +665,7 @@ function showTab(tab){
 
 // ── LİDERLİK ─────────────────────────────────────────────────
 function renderLeaderboard(){
-  const mc=document.getElementById('main-content');
-  mc.innerHTML=`<div class="page"><div class="lb-loading">⏳ Yükleniyor...</div></div>`;
+  document.getElementById('main-content').innerHTML=`<div class="page"><div class="lb-loading">⏳ Yükleniyor...</div></div>`;
   loadLb();
 }
 async function loadLb(){
@@ -641,13 +673,12 @@ async function loadLb(){
     const[users,preds]=await Promise.all([DB.allUsers(),DB.allPreds()]);
     const pm={};(preds||[]).forEach(p=>pm[p.user_id]=p);
     const rows=(users||[]).map(u=>{
-      const p=pm[u.id]||{};const r=p.group_rankings||{};
+      const p=pm[u.id]||{};
+      const r=p.group_rankings||{};
       const done=GROUP_IDS.filter(g=>{const rk=r[g];return rk&&rk.length===4&&rk.some((t,i)=>t!==GROUPS[g].teams[i].n);}).length;
       return{id:u.id,name:u.username,pts:done*2,pct:Math.round(done/12*100)};
     }).sort((a,b)=>b.pts-a.pts||b.pct-a.pct);
-
-    const mc=document.getElementById('main-content');
-    mc.innerHTML=`<div class="page">
+    document.getElementById('main-content').innerHTML=`<div class="page">
       <div class="page-title">🏅 Liderlik Tablosu</div>
       <div class="pts-key">Grup geçişi <b>2p</b> · Son 32 <b>5p</b> · Çeyrek <b>7p</b> · Yarı <b>10p</b> · Final <b>15p</b> · Şampiyon <b>20p</b></div>
       <div class="lb-table">
@@ -668,8 +699,7 @@ async function loadLb(){
 
 // ── İSTATİSTİK ────────────────────────────────────────────────
 function renderStats(){
-  const mc=document.getElementById('main-content');
-  mc.innerHTML=`<div class="page"><div class="lb-loading">⏳ Yükleniyor...</div></div>`;
+  document.getElementById('main-content').innerHTML=`<div class="page"><div class="lb-loading">⏳ Yükleniyor...</div></div>`;
   loadStats();
 }
 async function loadStats(){
@@ -694,15 +724,16 @@ async function loadStats(){
           <div class="bar-cnt">${c}</div>
         </div>`).join('')}
       </div>`;
-  }catch(e){}
+  }catch(e){console.error(e);}
 }
 
 // ── BAŞLATMA ──────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
   loadTheme();
   setInterval(updateHeader,60000);
-
-  // Session restore
+  document.getElementById('modal').addEventListener('click',e=>{
+    if(e.target===document.getElementById('modal'))closeModal();
+  });
   const saved=sessionStorage.getItem('wc_user');
   if(saved){
     try{
@@ -717,7 +748,5 @@ document.addEventListener('DOMContentLoaded', async()=>{
       return;
     }catch(e){sessionStorage.removeItem('wc_user');}
   }
-
-  // Giriş yapılmamış → splash göster
   renderSplashForm();
 });

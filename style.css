@@ -604,3 +604,27 @@ body { background: var(--bg); color: var(--text); }
   opacity: 0; transition: opacity .15s;
 }
 .b8-row.b8-sel .b8-check { opacity: 1; }
+
+/* ── KUPA GÖRSELİ ────────────────────────────── */
+.trophy-img {
+  width: 90px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 20px rgba(255,183,0,0.6));
+  animation: float 3s ease-in-out infinite;
+}
+.hdr-logo .trophy-img {
+  width: 28px;
+  height: auto;
+  animation: none;
+  filter: drop-shadow(0 0 6px rgba(255,183,0,0.4));
+}
+
+/* ── EKİP MODAL ──────────────────────────────── */
+.team-opts { display: flex; flex-direction: column; gap: 10px; }
+.team-opt-btn {
+  padding: 13px; background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 10px; color: var(--text); font-size: 14px; font-weight: 700;
+  transition: background .15s;
+}
+.team-opt-btn:hover { background: var(--bg4); }
