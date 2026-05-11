@@ -762,3 +762,28 @@ body { background: var(--bg); color: var(--text); }
   background: var(--bg2); border: 1.5px solid var(--border2);
   border-radius: 12px; padding: 14px; margin-bottom: 10px;
 }
+
+/* ── v11 EKLEMELERİ ──────────────────────────── */
+.back-btn { background:none;border:none;color:var(--text3);font-size:15px;font-weight:700;padding:0;cursor:pointer;display:flex;align-items:center;gap:4px; }
+.back-btn:hover { color:var(--text); }
+.page-sub { font-size:13px;color:var(--text3);margin:6px 0 16px;line-height:1.6; }
+.form-card { background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:4px; }
+.settings-section { background:var(--bg3);border-radius:10px;padding:12px;margin:8px 0; }
+.settings-title { font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px; }
+.sb-home-btn { background:none;border:none;color:var(--green);font-size:10px;font-weight:700;cursor:pointer;padding:0; }
+.sb-home-btn:hover { text-decoration:underline; }
+.team-current-banner { background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--text2);margin-bottom:4px; }
+.team-current-banner b { color:var(--gold); }
+.past-pool-section { background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin:12px 0; }
+.past-pool-title { font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px; }
+.pool-opts-row { margin-bottom:10px; }
+.past-team-info { font-size:13px;color:var(--text2);padding-top:8px;border-top:1px solid var(--border); }
+.past-team-info b { color:var(--gold); }
+.link-btn { background:none;border:none;color:var(--green);font-size:13px;font-weight:700;cursor:pointer;padding:0; }
+.champ-disp { display:flex;align-items:center;gap:8px;background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:10px;padding:10px 14px;margin:10px 0;font-size:13px;font-weight:700;color:var(--gold); }
+.ptl-row { display:flex;align-items:flex-start;gap:12px;cursor:pointer; }
+.ptl-row input[type=checkbox] { display:none; }
+.final-save-card { background:var(--bg2);border:1.5px solid var(--green-bd);border-radius:14px;padding:16px;margin-bottom:8px; }
+.fsc-title { font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px; }
+.fsc-champ { font-size:13px;color:var(--text2);margin-bottom:4px; }
+.fsc-champ b { color:var(--gold); }
