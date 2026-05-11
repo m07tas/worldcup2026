@@ -1,11 +1,10 @@
 /* ============================================================
-   FIFA 2026 TAHMİN PLATFORMU — script.js  (v11)
+   FIFA 2026 TAHMİN PLATFORMU — script.js  (v12 - clean)
    ============================================================ */
 
-// ── SABITLER ─────────────────────────────────────────────────
 const LOCK_DATE  = new Date('2026-06-08T00:00:00');
 const IS_LOCKED  = new Date() >= LOCK_DATE;
-const WC_KICKOFF = new Date('2026-06-11T19:00:00Z'); // 22:00 TR
+const WC_KICKOFF = new Date('2026-06-11T19:00:00Z');
 const SB_URL = 'https://jkfhqcygjvuijkjamgyn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZmhxY3lnanZ1aWpramFtZ3luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MzAwNjMsImV4cCI6MjA5NDAwNjA2M30.6_6QZBGdYiOKpyIGbfuzKfTXsyTifyUSTBHoW5fWmJ8';
 
@@ -32,47 +31,22 @@ const R32 = [
   [{g:'B',p:1},{t:'3',slot:6}],[{g:'D',p:2},{g:'G',p:2}],
   [{g:'J',p:1},{g:'H',p:2}],[{g:'K',p:1},{t:'3',slot:7}],
 ];
-
-// ── GRUPLAR & FİKSTÜR ─────────────────────────────────────────
-const GROUPS = {
-  A:{t:[{n:'Meksika',f:'🇲🇽'},{n:'Güney Kore',f:'🇰🇷'},{n:'Güney Afrika',f:'🇿🇦'},{n:'Çekya',f:'🇨🇿'}],
-     fx:[{h:'Meksika',a:'Güney Afrika',d:'11 Haz',v:'Estadio Azteca'},{h:'Güney Kore',a:'Çekya',d:'11 Haz',v:'Estadio Akron'},{h:'Çekya',a:'Güney Afrika',d:'18 Haz',v:'Mercedes-Benz Stadium'},{h:'Meksika',a:'Güney Kore',d:'18 Haz',v:'Estadio Akron'},{h:'Çekya',a:'Meksika',d:'24 Haz',v:'Estadio Azteca'},{h:'Güney Afrika',a:'Güney Kore',d:'24 Haz',v:'Estadio BBVA'}]},
-  B:{t:[{n:'Kanada',f:'🇨🇦'},{n:'Bosna-Hersek',f:'🇧🇦'},{n:'Katar',f:'🇶🇦'},{n:'İsviçre',f:'🇨🇭'}],
-     fx:[{h:'Kanada',a:'Bosna-Hersek',d:'12 Haz',v:'BMO Field'},{h:'Katar',a:'İsviçre',d:'13 Haz',v:'Lumen Field'},{h:'Bosna-Hersek',a:'İsviçre',d:'19 Haz',v:'Hard Rock Stadium'},{h:'Kanada',a:'Katar',d:'19 Haz',v:'BC Place'},{h:'İsviçre',a:'Kanada',d:'25 Haz',v:'BC Place'},{h:'Bosna-Hersek',a:'Katar',d:'25 Haz',v:"Levi's Stadium"}]},
-  C:{t:[{n:'Brezilya',f:'🇧🇷'},{n:'Fas',f:'🇲🇦'},{n:'İskoçya',f:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'},{n:'Haiti',f:'🇭🇹'}],
-     fx:[{h:'Brezilya',a:'Fas',d:'12 Haz',v:'MetLife Stadium'},{h:'İskoçya',a:'Haiti',d:'12 Haz',v:'SoFi Stadium'},{h:'Fas',a:'Haiti',d:'18 Haz',v:'AT&T Stadium'},{h:'Brezilya',a:'İskoçya',d:'18 Haz',v:'Gillette Stadium'},{h:'Fas',a:'İskoçya',d:'24 Haz',v:'Gillette Stadium'},{h:'Haiti',a:'Brezilya',d:'24 Haz',v:'Hard Rock Stadium'}]},
-  D:{t:[{n:'ABD',f:'🇺🇸'},{n:'Paraguay',f:'🇵🇾'},{n:'Avustralya',f:'🇦🇺'},{n:'Türkiye',f:'🇹🇷'}],
-     fx:[{h:'ABD',a:'Paraguay',d:'12 Haz',v:'SoFi Stadium'},{h:'Avustralya',a:'Türkiye',d:'13 Haz',v:'Lumen Field'},{h:'Paraguay',a:'Türkiye',d:'19 Haz',v:'Arrowhead Stadium'},{h:'ABD',a:'Avustralya',d:'19 Haz',v:'SoFi Stadium'},{h:'Türkiye',a:'ABD',d:'25 Haz',v:"Levi's Stadium"},{h:'Paraguay',a:'Avustralya',d:'25 Haz',v:'Lincoln Financial'}]},
-  E:{t:[{n:'Almanya',f:'🇩🇪'},{n:'Fildişi Sahili',f:'🇨🇮'},{n:'Ekvador',f:'🇪🇨'},{n:'Curaçao',f:'🇨🇼'}],
-     fx:[{h:'Almanya',a:'Curaçao',d:'14 Haz',v:'NRG Stadium'},{h:'Fildişi Sahili',a:'Ekvador',d:'14 Haz',v:'Lincoln Financial'},{h:'Almanya',a:'Fildişi Sahili',d:'20 Haz',v:'BMO Field'},{h:'Ekvador',a:'Curaçao',d:'20 Haz',v:'Arrowhead Stadium'},{h:'Curaçao',a:'Fildişi Sahili',d:'25 Haz',v:'Lincoln Financial'},{h:'Ekvador',a:'Almanya',d:'25 Haz',v:'MetLife Stadium'}]},
-  F:{t:[{n:'Hollanda',f:'🇳🇱'},{n:'Japonya',f:'🇯🇵'},{n:'İsveç',f:'🇸🇪'},{n:'Tunus',f:'🇹🇳'}],
-     fx:[{h:'Hollanda',a:'Japonya',d:'14 Haz',v:'AT&T Stadium'},{h:'İsveç',a:'Tunus',d:'14 Haz',v:'Estadio BBVA'},{h:'Hollanda',a:'İsveç',d:'20 Haz',v:'NRG Stadium'},{h:'Japonya',a:'Tunus',d:'20 Haz',v:'Estadio BBVA'},{h:'Tunus',a:'Hollanda',d:'25 Haz',v:'Estadio Akron'},{h:'İsveç',a:'Japonya',d:'25 Haz',v:'Hard Rock Stadium'}]},
-  G:{t:[{n:'Belçika',f:'🇧🇪'},{n:'Mısır',f:'🇪🇬'},{n:'İran',f:'🇮🇷'},{n:'Yeni Zelanda',f:'🇳🇿'}],
-     fx:[{h:'Belçika',a:'Mısır',d:'15 Haz',v:'SoFi Stadium'},{h:'İran',a:'Yeni Zelanda',d:'15 Haz',v:"Levi's Stadium"},{h:'Belçika',a:'Yeni Zelanda',d:'21 Haz',v:'AT&T Stadium'},{h:'Mısır',a:'İran',d:'21 Haz',v:'NRG Stadium'},{h:'Mısır',a:'Yeni Zelanda',d:'26 Haz',v:'Lincoln Financial'},{h:'İran',a:'Belçika',d:'26 Haz',v:'MetLife Stadium'}]},
-  H:{t:[{n:'İspanya',f:'🇪🇸'},{n:'Uruguay',f:'🇺🇾'},{n:'Suudi Arabistan',f:'🇸🇦'},{n:'Yeşil Burun',f:'🇨🇻'}],
-     fx:[{h:'İspanya',a:'Suudi Arabistan',d:'15 Haz',v:'Mercedes-Benz Stadium'},{h:'Uruguay',a:'Yeşil Burun',d:'15 Haz',v:'Hard Rock Stadium'},{h:'İspanya',a:'Uruguay',d:'21 Haz',v:'Gillette Stadium'},{h:'Suudi Arabistan',a:'Yeşil Burun',d:'21 Haz',v:'Lumen Field'},{h:'Suudi Arabistan',a:'Uruguay',d:'26 Haz',v:'MetLife Stadium'},{h:'Yeşil Burun',a:'İspanya',d:'26 Haz',v:'Arrowhead Stadium'}]},
-  I:{t:[{n:'Fransa',f:'🇫🇷'},{n:'Senegal',f:'🇸🇳'},{n:'Norveç',f:'🇳🇴'},{n:'Irak',f:'🇮🇶'}],
-     fx:[{h:'Fransa',a:'Norveç',d:'16 Haz',v:'Mercedes-Benz Stadium'},{h:'Senegal',a:'Irak',d:'16 Haz',v:'Lincoln Financial'},{h:'Fransa',a:'Irak',d:'22 Haz',v:'Lincoln Financial'},{h:'Norveç',a:'Senegal',d:'22 Haz',v:'Gillette Stadium'},{h:'Irak',a:'Norveç',d:'27 Haz',v:'BC Place'},{h:'Fransa',a:'Senegal',d:'27 Haz',v:'Estadio Azteca'}]},
-  J:{t:[{n:'Arjantin',f:'🇦🇷'},{n:'Avusturya',f:'🇦🇹'},{n:'Cezayir',f:'🇩🇿'},{n:'Ürdün',f:'🇯🇴'}],
-     fx:[{h:'Arjantin',a:'Avusturya',d:'16 Haz',v:'AT&T Stadium'},{h:'Cezayir',a:'Ürdün',d:'16 Haz',v:"Levi's Stadium"},{h:'Arjantin',a:'Cezayir',d:'22 Haz',v:'Hard Rock Stadium'},{h:'Avusturya',a:'Ürdün',d:'22 Haz',v:'NRG Stadium'},{h:'Ürdün',a:'Arjantin',d:'27 Haz',v:'Estadio BBVA'},{h:'Cezayir',a:'Avusturya',d:'27 Haz',v:'Estadio Akron'}]},
-  K:{t:[{n:'Portekiz',f:'🇵🇹'},{n:'Kolombiya',f:'🇨🇴'},{n:'Özbekistan',f:'🇺🇿'},{n:'Kongo DR',f:'🇨🇩'}],
-     fx:[{h:'Portekiz',a:'Özbekistan',d:'17 Haz',v:'NRG Stadium'},{h:'Kolombiya',a:'Kongo DR',d:'17 Haz',v:'Estadio Akron'},{h:'Portekiz',a:'Kongo DR',d:'23 Haz',v:'Mercedes-Benz Stadium'},{h:'Özbekistan',a:'Kolombiya',d:'23 Haz',v:'Arrowhead Stadium'},{h:'Kongo DR',a:'Özbekistan',d:'28 Haz',v:'Lumen Field'},{h:'Kolombiya',a:'Portekiz',d:'28 Haz',v:'Estadio Azteca'}]},
-  L:{t:[{n:'İngiltere',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},{n:'Hırvatistan',f:'🇭🇷'},{n:'Gana',f:'🇬🇭'},{n:'Panama',f:'🇵🇦'}],
-     fx:[{h:'İngiltere',a:'Hırvatistan',d:'17 Haz',v:'AT&T Stadium'},{h:'Gana',a:'Panama',d:'17 Haz',v:'BMO Field'},{h:'İngiltere',a:'Gana',d:'23 Haz',v:'Gillette Stadium'},{h:'Hırvatistan',a:'Panama',d:'23 Haz',v:'BMO Field'},{h:'Panama',a:'İngiltere',d:'28 Haz',v:'Lincoln Financial'},{h:'Hırvatistan',a:'Gana',d:'28 Haz',v:'BC Place'}]},
-};
-function getFlag(n){for(const g of GRP){const t=GROUPS[g].t.find(x=>x.n===n);if(t)return t.f;}return '🏳️';}
+const GROUPS={A:{t:[{n:'Meksika',f:'🇲🇽'},{n:'Güney Kore',f:'🇰🇷'},{n:'Güney Afrika',f:'🇿🇦'},{n:'Çekya',f:'🇨🇿'}],fx:[{h:'Meksika',a:'Güney Afrika',d:'11 Haz',v:'Estadio Azteca'},{h:'Güney Kore',a:'Çekya',d:'11 Haz',v:'Estadio Akron'},{h:'Çekya',a:'Güney Afrika',d:'18 Haz',v:'Mercedes-Benz Stadium'},{h:'Meksika',a:'Güney Kore',d:'18 Haz',v:'Estadio Akron'},{h:'Çekya',a:'Meksika',d:'24 Haz',v:'Estadio Azteca'},{h:'Güney Afrika',a:'Güney Kore',d:'24 Haz',v:'Estadio BBVA'}]},B:{t:[{n:'Kanada',f:'🇨🇦'},{n:'Bosna-Hersek',f:'🇧🇦'},{n:'Katar',f:'🇶🇦'},{n:'İsviçre',f:'🇨🇭'}],fx:[{h:'Kanada',a:'Bosna-Hersek',d:'12 Haz',v:'BMO Field'},{h:'Katar',a:'İsviçre',d:'13 Haz',v:'Lumen Field'},{h:'Bosna-Hersek',a:'İsviçre',d:'19 Haz',v:'Hard Rock Stadium'},{h:'Kanada',a:'Katar',d:'19 Haz',v:'BC Place'},{h:'İsviçre',a:'Kanada',d:'25 Haz',v:'BC Place'},{h:'Bosna-Hersek',a:'Katar',d:'25 Haz',v:"Levi's Stadium"}]},C:{t:[{n:'Brezilya',f:'🇧🇷'},{n:'Fas',f:'🇲🇦'},{n:'İskoçya',f:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'},{n:'Haiti',f:'🇭🇹'}],fx:[{h:'Brezilya',a:'Fas',d:'12 Haz',v:'MetLife Stadium'},{h:'İskoçya',a:'Haiti',d:'12 Haz',v:'SoFi Stadium'},{h:'Fas',a:'Haiti',d:'18 Haz',v:'AT&T Stadium'},{h:'Brezilya',a:'İskoçya',d:'18 Haz',v:'Gillette Stadium'},{h:'Fas',a:'İskoçya',d:'24 Haz',v:'Gillette Stadium'},{h:'Haiti',a:'Brezilya',d:'24 Haz',v:'Hard Rock Stadium'}]},D:{t:[{n:'ABD',f:'🇺🇸'},{n:'Paraguay',f:'🇵🇾'},{n:'Avustralya',f:'🇦🇺'},{n:'Türkiye',f:'🇹🇷'}],fx:[{h:'ABD',a:'Paraguay',d:'12 Haz',v:'SoFi Stadium'},{h:'Avustralya',a:'Türkiye',d:'13 Haz',v:'Lumen Field'},{h:'Paraguay',a:'Türkiye',d:'19 Haz',v:'Arrowhead Stadium'},{h:'ABD',a:'Avustralya',d:'19 Haz',v:'SoFi Stadium'},{h:'Türkiye',a:'ABD',d:'25 Haz',v:"Levi's Stadium"},{h:'Paraguay',a:'Avustralya',d:'25 Haz',v:'Lincoln Financial'}]},E:{t:[{n:'Almanya',f:'🇩🇪'},{n:'Fildişi Sahili',f:'🇨🇮'},{n:'Ekvador',f:'🇪🇨'},{n:'Curaçao',f:'🇨🇼'}],fx:[{h:'Almanya',a:'Curaçao',d:'14 Haz',v:'NRG Stadium'},{h:'Fildişi Sahili',a:'Ekvador',d:'14 Haz',v:'Lincoln Financial'},{h:'Almanya',a:'Fildişi Sahili',d:'20 Haz',v:'BMO Field'},{h:'Ekvador',a:'Curaçao',d:'20 Haz',v:'Arrowhead Stadium'},{h:'Curaçao',a:'Fildişi Sahili',d:'25 Haz',v:'Lincoln Financial'},{h:'Ekvador',a:'Almanya',d:'25 Haz',v:'MetLife Stadium'}]},F:{t:[{n:'Hollanda',f:'🇳🇱'},{n:'Japonya',f:'🇯🇵'},{n:'İsveç',f:'🇸🇪'},{n:'Tunus',f:'🇹🇳'}],fx:[{h:'Hollanda',a:'Japonya',d:'14 Haz',v:'AT&T Stadium'},{h:'İsveç',a:'Tunus',d:'14 Haz',v:'Estadio BBVA'},{h:'Hollanda',a:'İsveç',d:'20 Haz',v:'NRG Stadium'},{h:'Japonya',a:'Tunus',d:'20 Haz',v:'Estadio BBVA'},{h:'Tunus',a:'Hollanda',d:'25 Haz',v:'Estadio Akron'},{h:'İsveç',a:'Japonya',d:'25 Haz',v:'Hard Rock Stadium'}]},G:{t:[{n:'Belçika',f:'🇧🇪'},{n:'Mısır',f:'🇪🇬'},{n:'İran',f:'🇮🇷'},{n:'Yeni Zelanda',f:'🇳🇿'}],fx:[{h:'Belçika',a:'Mısır',d:'15 Haz',v:'SoFi Stadium'},{h:'İran',a:'Yeni Zelanda',d:'15 Haz',v:"Levi's Stadium"},{h:'Belçika',a:'Yeni Zelanda',d:'21 Haz',v:'AT&T Stadium'},{h:'Mısır',a:'İran',d:'21 Haz',v:'NRG Stadium'},{h:'Mısır',a:'Yeni Zelanda',d:'26 Haz',v:'Lincoln Financial'},{h:'İran',a:'Belçika',d:'26 Haz',v:'MetLife Stadium'}]},H:{t:[{n:'İspanya',f:'🇪🇸'},{n:'Uruguay',f:'🇺🇾'},{n:'Suudi Arabistan',f:'🇸🇦'},{n:'Yeşil Burun',f:'🇨🇻'}],fx:[{h:'İspanya',a:'Suudi Arabistan',d:'15 Haz',v:'Mercedes-Benz Stadium'},{h:'Uruguay',a:'Yeşil Burun',d:'15 Haz',v:'Hard Rock Stadium'},{h:'İspanya',a:'Uruguay',d:'21 Haz',v:'Gillette Stadium'},{h:'Suudi Arabistan',a:'Yeşil Burun',d:'21 Haz',v:'Lumen Field'},{h:'Suudi Arabistan',a:'Uruguay',d:'26 Haz',v:'MetLife Stadium'},{h:'Yeşil Burun',a:'İspanya',d:'26 Haz',v:'Arrowhead Stadium'}]},I:{t:[{n:'Fransa',f:'🇫🇷'},{n:'Senegal',f:'🇸🇳'},{n:'Norveç',f:'🇳🇴'},{n:'Irak',f:'🇮🇶'}],fx:[{h:'Fransa',a:'Norveç',d:'16 Haz',v:'Mercedes-Benz Stadium'},{h:'Senegal',a:'Irak',d:'16 Haz',v:'Lincoln Financial'},{h:'Fransa',a:'Irak',d:'22 Haz',v:'Lincoln Financial'},{h:'Norveç',a:'Senegal',d:'22 Haz',v:'Gillette Stadium'},{h:'Irak',a:'Norveç',d:'27 Haz',v:'BC Place'},{h:'Fransa',a:'Senegal',d:'27 Haz',v:'Estadio Azteca'}]},J:{t:[{n:'Arjantin',f:'🇦🇷'},{n:'Avusturya',f:'🇦🇹'},{n:'Cezayir',f:'🇩🇿'},{n:'Ürdün',f:'🇯🇴'}],fx:[{h:'Arjantin',a:'Avusturya',d:'16 Haz',v:'AT&T Stadium'},{h:'Cezayir',a:'Ürdün',d:'16 Haz',v:"Levi's Stadium"},{h:'Arjantin',a:'Cezayir',d:'22 Haz',v:'Hard Rock Stadium'},{h:'Avusturya',a:'Ürdün',d:'22 Haz',v:'NRG Stadium'},{h:'Ürdün',a:'Arjantin',d:'27 Haz',v:'Estadio BBVA'},{h:'Cezayir',a:'Avusturya',d:'27 Haz',v:'Estadio Akron'}]},K:{t:[{n:'Portekiz',f:'🇵🇹'},{n:'Kolombiya',f:'🇨🇴'},{n:'Özbekistan',f:'🇺🇿'},{n:'Kongo DR',f:'🇨🇩'}],fx:[{h:'Portekiz',a:'Özbekistan',d:'17 Haz',v:'NRG Stadium'},{h:'Kolombiya',a:'Kongo DR',d:'17 Haz',v:'Estadio Akron'},{h:'Portekiz',a:'Kongo DR',d:'23 Haz',v:'Mercedes-Benz Stadium'},{h:'Özbekistan',a:'Kolombiya',d:'23 Haz',v:'Arrowhead Stadium'},{h:'Kongo DR',a:'Özbekistan',d:'28 Haz',v:'Lumen Field'},{h:'Kolombiya',a:'Portekiz',d:'28 Haz',v:'Estadio Azteca'}]},L:{t:[{n:'İngiltere',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},{n:'Hırvatistan',f:'🇭🇷'},{n:'Gana',f:'🇬🇭'},{n:'Panama',f:'🇵🇦'}],fx:[{h:'İngiltere',a:'Hırvatistan',d:'17 Haz',v:'AT&T Stadium'},{h:'Gana',a:'Panama',d:'17 Haz',v:'BMO Field'},{h:'İngiltere',a:'Gana',d:'23 Haz',v:'Gillette Stadium'},{h:'Hırvatistan',a:'Panama',d:'23 Haz',v:'BMO Field'},{h:'Panama',a:'İngiltere',d:'28 Haz',v:'Lincoln Financial'},{h:'Hırvatistan',a:'Gana',d:'28 Haz',v:'BC Place'}]}};
+function getFlag(n){for(const g of GRP){const t=GROUPS[g].t.find(x=>x.n===n);if(t)return t.f;}return'🏳️';}
 
 // ── SUPABASE ──────────────────────────────────────────────────
 const DB={
   async q(path,opts={}){
     const r=await fetch(SB_URL+path,{...opts,headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json',...(opts.headers||{})}});
     const txt=await r.text();
-    if(!r.ok){let m='DB '+r.status;try{const j=JSON.parse(txt);m=j.message||j.error||m;}catch(e){}throw new Error(m);}
+    if(!r.ok){let m='DB hata '+r.status;try{const j=JSON.parse(txt);m=j.message||j.error||m;}catch(e){}throw new Error(m);}
     return txt?JSON.parse(txt):null;
   },
+  // Users
   getUser(u){return this.q(`/rest/v1/users?username=eq.${encodeURIComponent(u)}&select=id,username`);},
   login(u,h){return this.q(`/rest/v1/users?username=eq.${encodeURIComponent(u)}&password_hash=eq.${h}&select=id,username`);},
-  create(u,h){return this.q('/rest/v1/users',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({username:u,password_hash:h})});},
+  createUser(u,h){return this.q('/rest/v1/users',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({username:u,password_hash:h})});},
+  // Predictions (1 per user, genel havuz)
   async getPred(uid){const d=await this.q(`/rest/v1/predictions?user_id=eq.${uid}&select=*`);return d&&d[0];},
   async savePred(uid,payload){
     const ex=await this.q(`/rest/v1/predictions?user_id=eq.${uid}&select=id`);
@@ -80,10 +54,27 @@ const DB={
     if(ex&&ex.length)return this.q(`/rest/v1/predictions?user_id=eq.${uid}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body});
     return this.q('/rest/v1/predictions',{method:'POST',headers:{'Prefer':'return=minimal'},body});
   },
-  getTeam(name){return this.q(`/rest/v1/predictions?team_name=eq.${encodeURIComponent(name)}&select=user_id,team_name,team_pass,team_settings&limit=1`);},
+  // Teams
+  getTeamByName(name){return this.q(`/rest/v1/teams?name=eq.${encodeURIComponent(name)}&select=id,name,password_hash,owner_id,max_members,max_predictions,visibility`);},
+  createTeam(name,pwHash,ownerId,settings){
+    return this.q('/rest/v1/teams',{method:'POST',headers:{'Prefer':'return=representation'},
+      body:JSON.stringify({name,password_hash:pwHash||null,owner_id:ownerId,...settings})});
+  },
+  // Team members — çoklu ekip için
+  getMyTeams(uid){return this.q(`/rest/v1/team_members?user_id=eq.${uid}&select=team_id,teams(id,name,max_members,max_predictions,visibility)`);},
+  joinTeamMember(teamId,userId){return this.q('/rest/v1/team_members',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({team_id:teamId,user_id:userId})});},
+  leaveTeam(teamId,userId){return this.q(`/rest/v1/team_members?team_id=eq.${teamId}&user_id=eq.${userId}`,{method:'DELETE'});},
+  getTeamMembers(teamId){return this.q(`/rest/v1/team_members?team_id=eq.${teamId}&select=user_id,users(username)`);},
+  // team_predictions — hangi tahmin hangi ekipte
+  getMyTeamPreds(uid){return this.q(`/rest/v1/team_predictions?user_id=eq.${uid}&select=team_id`);},
+  addToTeam(teamId,userId){return this.q('/rest/v1/team_predictions',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({team_id:teamId,user_id:userId})});},
+  removeFromTeam(teamId,userId){return this.q(`/rest/v1/team_predictions?team_id=eq.${teamId}&user_id=eq.${userId}`,{method:'DELETE'});},
+  getTeamPredictions(teamId){return this.q(`/rest/v1/team_predictions?team_id=eq.${teamId}&select=user_id`);},
+  // Leaderboard
   allUsers(){return this.q('/rest/v1/users?select=id,username');},
-  allPreds(){return this.q('/rest/v1/predictions?select=user_id,group_rankings,bracket,champion,team_name,public');},
+  allPreds(){return this.q('/rest/v1/predictions?select=user_id,group_rankings,bracket,champion,public');},
 };
+
 async function hashPw(p){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(p));
   return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
@@ -92,7 +83,9 @@ async function hashPw(p){
 // ── STATE ─────────────────────────────────────────────────────
 const S={
   user:null,
-  preds:{group_rankings:{},bracket:{},champion:'',best8:[],team_name:'',team_pass:'',team_settings:{},share_public:true},
+  preds:{group_rankings:{},bracket:{},champion:'',best8:[],public:true},
+  myTeams:[], // [{id,name,...}] — kullanıcının üye olduğu ekipler
+  myTeamPredIds:[], // hangi ekiplere tahmin gönderildi [teamId,...]
   currentStep:0,
   ranking(g){const r=this.preds.group_rankings[g];return(r&&r.length===4)?[...r]:GROUPS[g].t.map(t=>t.n);},
   setRanking(g,a){this.preds.group_rankings[g]=a;},
@@ -100,11 +93,8 @@ const S={
   doneCount(){return GRP.filter(g=>this.isGroupDone(g)).length;},
   allThirds(){return GRP.map(g=>({gid:g,name:this.ranking(g)[2],flag:getFlag(this.ranking(g)[2])}));},
   toggleBest8(name){
-    const b=this.preds.best8||[];
-    const i=b.indexOf(name);
-    if(i>=0)b.splice(i,1);
-    else if(b.length<8)b.push(name);
-    else return false;
+    const b=this.preds.best8||[];const i=b.indexOf(name);
+    if(i>=0)b.splice(i,1);else if(b.length<8)b.push(name);else return false;
     this.preds.best8=b;return true;
   },
   r32team(src){
@@ -133,30 +123,28 @@ const S={
 
 // ── TEMA ──────────────────────────────────────────────────────
 function toggleTheme(){
-  const h=document.documentElement;
-  const n=h.dataset.theme==='dark'?'light':'dark';
-  h.dataset.theme=n;
+  const n=document.documentElement.dataset.theme==='dark'?'light':'dark';
+  document.documentElement.dataset.theme=n;
   document.getElementById('theme-btn').textContent=n==='dark'?'🌙':'☀️';
   localStorage.setItem('wc_theme',n);
 }
 function loadTheme(){
   const t=localStorage.getItem('wc_theme')||'dark';
   document.documentElement.dataset.theme=t;
-  const b=document.getElementById('theme-btn');
-  if(b)b.textContent=t==='dark'?'🌙':'☀️';
+  const b=document.getElementById('theme-btn');if(b)b.textContent=t==='dark'?'🌙':'☀️';
 }
 
 // ── TOAST ─────────────────────────────────────────────────────
 function toast(msg,type='ok'){
   const w=document.getElementById('toast-wrap');
-  const el=document.createElement('div');
-  el.className='toast toast-'+type;el.textContent=msg;
+  const el=document.createElement('div');el.className='toast toast-'+type;el.textContent=msg;
   w.appendChild(el);setTimeout(()=>el.remove(),3000);
 }
+function mc(){return document.getElementById('main-content');}
 function openModal(html){document.getElementById('modal-box').innerHTML=html;document.getElementById('modal').classList.add('open');}
 function closeModal(e){if(!e||e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');}
 
-// ── SPLASH ────────────────────────────────────────────────────
+// ── AUTH ──────────────────────────────────────────────────────
 let _sm='login';
 function splashTab(m){
   _sm=m;
@@ -187,11 +175,15 @@ function serr(msg){const el=document.getElementById('serr');if(el)el.textContent
 async function doLogin(){
   const u=document.getElementById('su').value.trim(),p=document.getElementById('sp').value;
   serr('');if(!u||!p){serr('Tüm alanları doldur.');return;}serr('Giriş yapılıyor...');
-  try{const h=await hashPw(p);const r=await DB.login(u,h);if(!r||!r.length){serr('Kullanıcı adı veya şifre hatalı.');return;}await loginOK(r[0]);}
-  catch(e){serr('Hata: '+e.message);}
+  try{
+    const h=await hashPw(p);const r=await DB.login(u,h);
+    if(!r||!r.length){serr('Kullanıcı adı veya şifre hatalı.');return;}
+    await loginOK(r[0]);
+  }catch(e){serr('Hata: '+e.message);}
 }
 async function doRegister(){
-  const u=document.getElementById('su').value.trim(),p=document.getElementById('sp').value,p2=document.getElementById('sp2')?document.getElementById('sp2').value:'';
+  const u=document.getElementById('su').value.trim(),p=document.getElementById('sp').value;
+  const p2=document.getElementById('sp2')?document.getElementById('sp2').value:'';
   serr('');
   if(!u||!p){serr('Tüm alanları doldur.');return;}
   if(u.length<3){serr('Kullanıcı adı en az 3 karakter.');return;}
@@ -200,26 +192,43 @@ async function doRegister(){
   serr('Kontrol ediliyor...');
   try{
     const ex=await DB.getUser(u);
-    if(ex&&ex.length){serr('Bu kullanıcı adı alınmış, başka bir ad seç.');return;}
-    const h=await hashPw(p);const r=await DB.create(u,h);
+    if(ex&&ex.length){serr('Bu kullanıcı adı alınmış.');return;}
+    const h=await hashPw(p);const r=await DB.createUser(u,h);
     if(!r||!r.length){serr('Kayıt başarısız.');return;}
     await loginOK(r[0]);
   }catch(e){serr('Hata: '+e.message);}
 }
+
 async function loginOK(user){
   S.user=user;
-  // localStorage ile kalıcı oturum — tarayıcı kapansa bile hatırlar
   localStorage.setItem('wc_user',JSON.stringify(user));
   try{
-    const p=await DB.getPred(user.id);
-    if(p){S.preds.group_rankings=p.group_rankings||{};S.preds.bracket=p.bracket||{};S.preds.champion=p.champion||'';S.preds.best8=p.best8||[];S.preds.team_name=p.team_name||'';S.preds.team_pass=p.team_pass||'';S.preds.team_settings=p.team_settings||{};S.preds.share_public=p.public!==false;}
-  }catch(e){}
+    const[pred,teamsRaw,teamPredRaw]=await Promise.all([
+      DB.getPred(user.id),
+      DB.getMyTeams(user.id),
+      DB.getMyTeamPreds(user.id),
+    ]);
+    if(pred){
+      S.preds.group_rankings=pred.group_rankings||{};
+      S.preds.bracket=pred.bracket||{};
+      S.preds.champion=pred.champion||'';
+      S.preds.best8=pred.best8||[];
+      S.preds.public=pred.public!==false;
+    }
+    S.myTeams=(teamsRaw||[]).map(r=>r.teams).filter(Boolean);
+    S.myTeamPredIds=(teamPredRaw||[]).map(r=>r.team_id);
+  }catch(e){console.warn('Yükleme hatası:',e);}
   document.getElementById('splash-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
-  updateHeader();showMainMenu();toast('Hoş geldin, '+user.username+'! 👋');
+  updateHeader();
+  showMainMenu();
+  toast('Hoş geldin, '+user.username+'! 👋');
 }
+
 function doLogout(){
-  S.user=null;S.preds={group_rankings:{},bracket:{},champion:'',best8:[],team_name:'',team_pass:'',team_settings:{},share_public:true};S.currentStep=0;
+  S.user=null;
+  S.preds={group_rankings:{},bracket:{},champion:'',best8:[],public:true};
+  S.myTeams=[];S.myTeamPredIds=[];S.currentStep=0;
   localStorage.removeItem('wc_user');
   document.getElementById('main-app').style.display='none';
   document.getElementById('splash-screen').style.display='flex';
@@ -229,40 +238,60 @@ function doLogout(){
 // ── HEADER ────────────────────────────────────────────────────
 function updateHeader(){
   const lock=document.getElementById('hdr-lock');
-  if(lock){const now=new Date();if(now>=WC_KICKOFF){lock.textContent='⚽ Turnuva başladı!';}else{const d=WC_KICKOFF-now;lock.textContent=`⏳ ${Math.floor(d/86400000)}g ${Math.floor((d%86400000)/3600000)}s ${Math.floor((d%3600000)/60000)}dk`;}}
+  if(lock){
+    const now=new Date();
+    if(now>=WC_KICKOFF)lock.textContent='⚽ Turnuva başladı!';
+    else{const d=WC_KICKOFF-now;lock.textContent=`⏳ ${Math.floor(d/86400000)}g ${Math.floor((d%86400000)/3600000)}s ${Math.floor((d%3600000)/60000)}dk`;}
+  }
   const ua=document.getElementById('hdr-user-area');
-  if(ua&&S.user){ua.innerHTML=`<div class="hdr-chip"><div class="hdr-av">${S.user.username[0].toUpperCase()}</div><span class="hdr-uname">${S.user.username}</span><button class="hdr-out" onclick="doLogout()">Çıkış</button></div>`;}
+  if(ua&&S.user){
+    ua.innerHTML=`<div class="hdr-chip">
+      <div class="hdr-av">${S.user.username[0].toUpperCase()}</div>
+      <span class="hdr-uname">${S.user.username}</span>
+      <button class="hdr-out" onclick="doLogout()">Çıkış</button>
+    </div>`;
+  }
+}
+
+// ── APP MODE ──────────────────────────────────────────────────
+function setMode(mode){
+  document.getElementById('step-bar').style.display=mode==='predict'?'block':'none';
+  document.querySelector('.bottom-nav').style.display='none';
+  document.querySelector('.save-fab').style.display='none';
 }
 
 // ── ANA MENÜ ──────────────────────────────────────────────────
 function showMainMenu(){
-  setAppMode('menu');
+  setMode('menu');
   const hasPred=S.doneCount()>0||Object.keys(S.preds.bracket).length>0;
-  const tn=S.preds.team_name;
+  const teamCount=S.myTeams.length;
   mc().innerHTML=`
     <div class="menu-page">
       <div class="menu-hero">
         <div class="menu-welcome">Hoş geldin,</div>
         <div class="menu-username">${S.user.username}</div>
-        ${tn?`<div class="menu-team-badge">👥 ${tn}</div>`:''}
+        ${teamCount>0?`<div class="menu-team-badge">👥 ${teamCount} ekipte üyesin</div>`:''}
       </div>
       <div class="menu-cards">
-        <button class="menu-card menu-primary" onclick="startPredict()">
+        <button class="menu-card menu-primary" onclick="showStartPredict()">
           <div class="mc-icon">⚽</div>
           <div class="mc-text"><div class="mc-title">Tahmine Başla</div><div class="mc-sub">${hasPred?'Tahminlerini güncelle':'Grupları tahmin et, şampiyonu seç'}</div></div>
           <div class="mc-arr">›</div>
         </button>
-        ${hasPred?`<button class="menu-card" onclick="showPastPreds()">
+        ${hasPred?`<button class="menu-card" onclick="showMyPreds()">
           <div class="mc-icon">📋</div>
-          <div class="mc-text"><div class="mc-title">Tahminlerime Göz At</div><div class="mc-sub">Mevcut tahminlerini gör ve havuz ayarla</div></div>
+          <div class="mc-text"><div class="mc-title">Tahminlerime Göz At</div><div class="mc-sub">Tahminlerini gör, ekip ve havuz ayarla</div></div>
           <div class="mc-arr">›</div>
         </button>`:''}
-        <button class="menu-card" onclick="showTeamMenu()">
+        <button class="menu-card" onclick="showTeamHub()">
           <div class="mc-icon">👥</div>
-          <div class="mc-text"><div class="mc-title">Ekip ${tn?'('+tn+')':''}</div><div class="mc-sub">${tn?'Ekip ayarları ve üyeler':'Ekip kur veya ekibe katıl'}</div></div>
+          <div class="mc-text">
+            <div class="mc-title">Ekip Yönetimi</div>
+            <div class="mc-sub">${teamCount>0?S.myTeams.map(t=>t.name).join(', '):'Ekip kur veya ekibe katıl'}</div>
+          </div>
           <div class="mc-arr">›</div>
         </button>
-        <button class="menu-card" onclick="showTab('leaderboard')">
+        <button class="menu-card" onclick="showLeaderboard()">
           <div class="mc-icon">🏅</div>
           <div class="mc-text"><div class="mc-title">Liderlik & İstatistik</div><div class="mc-sub">Sıralamalar ve istatistikler</div></div>
           <div class="mc-arr">›</div>
@@ -271,59 +300,102 @@ function showMainMenu(){
     </div>`;
 }
 
-function startPredict(){
-  setAppMode('menu');
-  const tn=S.preds.team_name;
+// ── TAHMİNE BAŞLA (havuz seçimi) ─────────────────────────────
+function showStartPredict(){
+  setMode('menu');
   mc().innerHTML=`
     <div class="page">
       <button class="back-btn" onclick="showMainMenu()">‹ Ana Menü</button>
       <div class="sum-title" style="margin-top:12px">⚽ Tahmine Başla</div>
-      <p class="page-sub">Tahminlerin hangi havuza gönderilsin?</p>
-      <div class="menu-cards" style="margin-top:4px">
+      <p class="page-sub">Tahminlerin hangi havuza gönderilsin? Birden fazla seçebilirsin.</p>
 
-        <button class="menu-card menu-primary" onclick="goPredict()">
-          <div class="mc-icon">🌍</div>
-          <div class="mc-text"><div class="mc-title">Genel Havuz</div><div class="mc-sub">Herkesin görebileceği genel liderlik tablosuna katıl (kişi başı max 1 tahmin)</div></div>
-          <div class="mc-arr">›</div>
-        </button>
+      <div class="pool-section">
+        <div class="pool-section-title">🌍 Genel Havuz</div>
+        <label class="pool-toggle-row">
+          <input type="checkbox" id="pool-public" ${S.preds.public?'checked':''}/>
+          <span class="ptl-box"></span>
+          <div class="ptl-text">
+            <div class="ptl-title">Genel liderlik tablosuna dahil et</div>
+            <div class="ptl-sub">Herkesin görebileceği tabloya katıl (kişi başı max 1 tahmin)</div>
+          </div>
+        </label>
+      </div>
 
-        ${tn?`<button class="menu-card" style="border-color:var(--gold-bd);background:var(--gold-bg)" onclick="goPredict()">
-          <div class="mc-icon">👥</div>
-          <div class="mc-text"><div class="mc-title">${tn} Ekibi ile</div><div class="mc-sub">Mevcut ekibine dahil ederek tahmin yap</div></div>
-          <div class="mc-arr" style="color:var(--gold)">›</div>
-        </button>`:''}
+      ${S.myTeams.length>0?`
+      <div class="pool-section">
+        <div class="pool-section-title">👥 Ekiplerim</div>
+        ${S.myTeams.map(t=>`
+          <label class="pool-toggle-row">
+            <input type="checkbox" class="team-pool-chk" data-tid="${t.id}" ${S.myTeamPredIds.includes(t.id)?'checked':''}/>
+            <span class="ptl-box"></span>
+            <div class="ptl-text">
+              <div class="ptl-title">${t.name}</div>
+              <div class="ptl-sub">Bu ekibin liderlik tablosuna dahil et</div>
+            </div>
+          </label>`).join('')}
+      </div>`:''}
 
-        <button class="menu-card" onclick="showCreateTeamPage()">
-          <div class="mc-icon">🏗️</div>
-          <div class="mc-text"><div class="mc-title">Yeni Ekip Kur</div><div class="mc-sub">Arkadaşlarınla özel ekip oluştur, sadece aramızda yarışalım</div></div>
-          <div class="mc-arr">›</div>
-        </button>
+      <div class="pool-section">
+        <div class="pool-section-title">➕ Yeni Ekip</div>
+        <div class="menu-cards" style="margin-top:8px">
+          <button class="menu-card" onclick="showCreateTeam()">
+            <div class="mc-icon">🏗️</div>
+            <div class="mc-text"><div class="mc-title">Ekip Kur</div><div class="mc-sub">Yeni ekip oluştur ve bu tahminle katıl</div></div>
+            <div class="mc-arr">›</div>
+          </button>
+          <button class="menu-card" onclick="showJoinTeam()">
+            <div class="mc-icon">🤝</div>
+            <div class="mc-text"><div class="mc-title">Ekibe Katıl</div><div class="mc-sub">Arkadaşının ekibine gir ve bu tahminle katıl</div></div>
+            <div class="mc-arr">›</div>
+          </button>
+        </div>
+      </div>
 
-        <button class="menu-card" onclick="showJoinTeamPage()">
-          <div class="mc-icon">🤝</div>
-          <div class="mc-text"><div class="mc-title">Ekibe Katıl</div><div class="mc-sub">Arkadaşının kurduğu ekibe ekip adı ve şifreyle gir</div></div>
-          <div class="mc-arr">›</div>
-        </button>
-
+      <div class="page-actions">
+        <button class="btn-primary btn-next" onclick="beginPredict()">Tahmine Başla →</button>
       </div>
     </div>`;
 }
 
-function goPredict(){
-  setAppMode('predict');
+async function beginPredict(){
+  // Seçimleri kaydet
+  S.preds.public=document.getElementById('pool-public').checked;
+  const newTeamPredIds=[];
+  document.querySelectorAll('.team-pool-chk').forEach(chk=>{
+    if(chk.checked)newTeamPredIds.push(chk.dataset.tid);
+  });
+  // Değişen team_predictions kayıtlarını güncelle
+  try{
+    // Eklenenler
+    for(const tid of newTeamPredIds){
+      if(!S.myTeamPredIds.includes(tid))await DB.addToTeam(tid,S.user.id);
+    }
+    // Çıkarılanlar
+    for(const tid of S.myTeamPredIds){
+      if(!newTeamPredIds.includes(tid))await DB.removeFromTeam(tid,S.user.id);
+    }
+    S.myTeamPredIds=newTeamPredIds;
+    await savePred();
+  }catch(e){console.warn('Havuz güncelleme hatası:',e);}
+  setMode('predict');
+  document.getElementById('step-bar').style.display='block';
+  document.querySelector('.save-fab').style.display='flex';
   S.currentStep=0;
   renderCurrentStep();
 }
 
 // ── GEÇMİŞ TAHMİNLER ─────────────────────────────────────────
-function showPastPreds(){
-  setAppMode('menu');
-  const tn=S.preds.team_name;
+function showMyPreds(){
+  setMode('menu');
   mc().innerHTML=`
     <div class="page">
       <button class="back-btn" onclick="showMainMenu()">‹ Ana Menü</button>
       <div class="sum-title" style="margin-top:12px">📋 Tahminlerim</div>
-      <div class="sum-table" style="margin-top:12px">
+      <p class="page-sub">
+        ${S.preds.public?'✅ Genel havuzda':'❌ Genel havuzda değil'} &nbsp;·&nbsp;
+        ${S.myTeamPredIds.length>0?`👥 ${S.myTeamPredIds.length} ekipte`:'Hiçbir ekipte değil'}
+      </p>
+      <div class="sum-table" style="margin-top:10px">
         ${GRP.map(g=>{
           const r=S.ranking(g);const done=S.isGroupDone(g);
           return`<div class="sum-row"><div class="sum-gid">Grup ${g}</div><div class="sum-teams">
@@ -333,97 +405,140 @@ function showPastPreds(){
           </div></div>`;
         }).join('')}
       </div>
-      ${S.preds.champion?`<div class="champ-disp"><span>🏆 Şampiyon Tahminin:</span><span>${getFlag(S.preds.champion)} ${S.preds.champion}</span></div>`:''}
-
-      <div class="past-pool-section">
-        <div class="past-pool-title">Tahmin Havuzu Ayarları</div>
-        <div class="pool-opts-row">
-          <label class="ptl-row">
-            <input type="checkbox" ${S.preds.share_public?'checked':''} onchange="S.preds.share_public=this.checked"/>
-            <span class="ptl-box"></span>
-            <div class="ptl-text"><div class="ptl-title">Genel havuza dahil</div><div class="ptl-sub">Herkesin görebileceği tabloya katıl (kişi başı max 1 tahmin)</div></div>
-          </label>
-        </div>
-        ${tn?`<div class="past-team-info">👥 <b>${tn}</b> ekibine dahil <button class="link-btn" onclick="S.preds.team_name='';DB.savePred(S.user.id,{team_name:null,team_pass:null}).then(()=>toast('Ekipten ayrıldın')).then(showPastPreds)">Ayrıl</button></div>`
-          :`<div class="past-team-info" style="color:var(--text3)">Herhangi bir ekibe dahil değilsin. <button class="link-btn" onclick="showTeamMenu()">Ekip bul →</button></div>`}
-      </div>
-
-      <div class="page-actions" style="display:flex;gap:8px;">
-        <button class="btn-primary" style="flex:1" onclick="saveAll().then(showMainMenu)">💾 Kaydet</button>
-        <button class="btn-primary" style="flex:1;background:var(--bg3);color:var(--text)" onclick="startPredict()">✏️ Güncelle</button>
+      ${S.preds.champion?`<div class="champ-disp"><span>🏆 Şampiyon:</span><span>${getFlag(S.preds.champion)} <b>${S.preds.champion}</b></span></div>`:''}
+      <div class="page-actions" style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-primary" style="flex:1;background:var(--bg3);color:var(--text)" onclick="showStartPredict()">⚙️ Havuz Ayarla</button>
+        <button class="btn-primary" style="flex:1" onclick="editPredict()">✏️ Düzenle</button>
       </div>
     </div>`;
 }
 
-// ── EKİP MENÜSÜ ──────────────────────────────────────────────
-function showTeamMenu(){
-  setAppMode('menu');
-  const tn=S.preds.team_name;
+function editPredict(){
+  setMode('predict');
+  document.getElementById('step-bar').style.display='block';
+  document.querySelector('.save-fab').style.display='flex';
+  S.currentStep=0;
+  renderCurrentStep();
+}
+
+// ── EKİP HUB ──────────────────────────────────────────────────
+function showTeamHub(){
+  setMode('menu');
   mc().innerHTML=`
     <div class="page">
       <button class="back-btn" onclick="showMainMenu()">‹ Ana Menü</button>
-      <div class="sum-title" style="margin-top:12px">👥 Ekip</div>
-      ${tn?`<div class="team-current-banner">Mevcut ekibin: <b>${tn}</b></div>`:''}
-      <div class="menu-cards" style="margin-top:14px">
-        <button class="menu-card" onclick="showCreateTeamPage()">
+      <div class="sum-title" style="margin-top:12px">👥 Ekip Yönetimi</div>
+      ${S.myTeams.length>0?`
+        <div class="page-sub">Üye olduğun ${S.myTeams.length} ekip:</div>
+        <div class="team-list">
+          ${S.myTeams.map(t=>`
+            <div class="team-item">
+              <div class="ti-info">
+                <div class="ti-name">${t.name}</div>
+                <div class="ti-meta">${t.max_members>0?`Max ${t.max_members} üye`:''} ${t.visibility==='public'?'· Açık':'· Gizli'}</div>
+              </div>
+              <div class="ti-actions">
+                <button class="ti-btn" onclick="showTeamDetail('${t.id}','${t.name.replace(/'/g,"\\'")}')">Detay</button>
+                <button class="ti-btn ti-leave" onclick="confirmLeaveTeam('${t.id}','${t.name.replace(/'/g,"\\'")}')">Ayrıl</button>
+              </div>
+            </div>`).join('')}
+        </div>`
+      :`<p class="page-sub">Henüz herhangi bir ekibe üye değilsin.</p>`}
+      <div class="menu-cards" style="margin-top:16px">
+        <button class="menu-card" onclick="showCreateTeam()">
           <div class="mc-icon">🏗️</div>
-          <div class="mc-text"><div class="mc-title">Yeni Ekip Kur</div><div class="mc-sub">Arkadaşlarınla özel bir ekip oluştur</div></div>
+          <div class="mc-text"><div class="mc-title">Yeni Ekip Kur</div><div class="mc-sub">Kendi ekibini oluştur, arkadaşlarını davet et</div></div>
           <div class="mc-arr">›</div>
         </button>
-        <button class="menu-card" onclick="showJoinTeamPage()">
+        <button class="menu-card" onclick="showJoinTeam()">
           <div class="mc-icon">🤝</div>
-          <div class="mc-text"><div class="mc-title">Ekibe Katıl</div><div class="mc-sub">Arkadaşının ekip adı ve şifresiyle gir</div></div>
+          <div class="mc-text"><div class="mc-title">Ekibe Katıl</div><div class="mc-sub">Ad ve şifreyle başka bir ekibe gir</div></div>
           <div class="mc-arr">›</div>
         </button>
-        ${tn?`<button class="menu-card" style="border-color:var(--red-bd)" onclick="doLeaveTeam()">
-          <div class="mc-icon">🚪</div>
-          <div class="mc-text"><div class="mc-title" style="color:var(--red)">Ekipten Ayrıl</div><div class="mc-sub">Tahminlerin sadece genel havuzda kalır</div></div>
-          <div class="mc-arr">›</div>
-        </button>`:''}
       </div>
     </div>`;
 }
 
-async function doLeaveTeam(){
-  S.preds.team_name='';S.preds.team_pass='';
-  try{await DB.savePred(S.user.id,{team_name:null,team_pass:null,group_rankings:S.preds.group_rankings,bracket:S.preds.bracket,champion:S.preds.champion,best8:S.preds.best8||[],public:S.preds.share_public});toast('Ekipten ayrıldın.');}catch(e){toast('Hata: '+e.message,'err');}
-  showTeamMenu();
+async function showTeamDetail(teamId,teamName){
+  setMode('menu');
+  mc().innerHTML=`<div class="page"><div class="lb-loading">⏳ Yükleniyor...</div></div>`;
+  try{
+    const[members,preds]=await Promise.all([
+      DB.getTeamMembers(teamId),
+      DB.getTeamPredictions(teamId),
+    ]);
+    const predUserIds=new Set((preds||[]).map(p=>p.user_id));
+    const allPreds=await DB.allPreds();
+    const predMap={};(allPreds||[]).forEach(p=>predMap[p.user_id]=p);
+    const rows=(members||[]).map(m=>{
+      const u=m.users||{};
+      const p=predMap[m.user_id]||{};
+      const r=p.group_rankings||{};
+      const done=GRP.filter(g=>{const rk=r[g];return rk&&rk.length===4&&rk.some((t,i)=>t!==GROUPS[g].t[i].n);}).length;
+      const isInTeam=predUserIds.has(m.user_id);
+      return{uid:m.user_id,name:u.username||'?',pts:done*2,done,isInTeam,isMe:m.user_id===S.user.id};
+    }).filter(r=>r.isInTeam).sort((a,b)=>b.pts-a.pts||b.done-a.done);
+    mc().innerHTML=`
+      <div class="page">
+        <button class="back-btn" onclick="showTeamHub()">‹ Ekipler</button>
+        <div class="sum-title" style="margin-top:12px">👥 ${teamName}</div>
+        <div class="lb-table" style="margin-top:12px">
+          <div class="lb-hdr-row"><div>#</div><div>Üye</div><div style="text-align:right">Puan</div><div style="text-align:right">Tamaml.</div></div>
+          ${rows.length===0?'<div class="lb-empty">Henüz tahmin yok.</div>':rows.map((u,i)=>{
+            const m=i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
+            return`<div class="lb-row${u.isMe?' me':''}"><div class="lb-rank">${m}</div><div class="lb-name">${u.name}${u.isMe?'<span class="me-tag">★</span>':''}</div><div class="lb-pts" style="text-align:right">${u.pts}</div><div class="lb-pct" style="text-align:right">%${Math.round(u.done/12*100)}</div></div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }catch(e){mc().innerHTML=`<div class="page"><button class="back-btn" onclick="showTeamHub()">‹ Geri</button><p style="color:var(--red);margin-top:12px">Yüklenemedi: ${e.message}</p></div>`;}
+}
+
+function confirmLeaveTeam(teamId,teamName){
+  openModal(`
+    <div class="modal-head"><span>Ekipten Ayrıl</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" style="padding:1.5rem">
+      <p style="margin-bottom:1rem;color:var(--text2)"><b>${teamName}</b> ekibinden ayrılmak istediğine emin misin?</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn-primary" style="flex:1;background:var(--red)" onclick="doLeaveTeam('${teamId}')">Ayrıl</button>
+        <button class="btn-primary" style="flex:1;background:var(--bg3);color:var(--text)" onclick="closeModal()">İptal</button>
+      </div>
+    </div>`);
+}
+
+async function doLeaveTeam(teamId){
+  try{
+    await DB.leaveTeam(teamId,S.user.id);
+    await DB.removeFromTeam(teamId,S.user.id);
+    S.myTeams=S.myTeams.filter(t=>t.id!==teamId);
+    S.myTeamPredIds=S.myTeamPredIds.filter(id=>id!==teamId);
+    closeModal();toast('Ekipten ayrıldın.');showTeamHub();
+  }catch(e){toast('Hata: '+e.message,'err');}
 }
 
 // ── EKİP KUR ──────────────────────────────────────────────────
-function showCreateTeamPage(){
+function showCreateTeam(fromPredict=false){
+  setMode('menu');
   mc().innerHTML=`
     <div class="page">
-      <button class="back-btn" onclick="showTeamMenu()">‹ Geri</button>
+      <button class="back-btn" onclick="${fromPredict?'showStartPredict()':'showTeamHub()'}">‹ Geri</button>
       <div class="sum-title" style="margin-top:12px">🏗️ Ekip Kur</div>
-      <p class="page-sub">Yeni bir ekip oluştur. Arkadaşların aynı ad ve şifreyle katılabilir.</p>
+      <p class="page-sub">Yeni bir ekip oluştur. Arkadaşların ekip adı ve şifreyle katılabilir.</p>
       <div class="form-card">
         <div class="sfield"><label>Ekip Adı</label><input class="sinp" id="ct-name" placeholder="Örn: Kuzey Yıldızları"/></div>
-        <div class="sfield"><label>Ekip Şifresi</label><div class="pw-row"><input class="sinp" id="ct-pass" type="password" placeholder="Arkadaşlarına vereceğin şifre"/><button class="pw-eye" onclick="tpw('ct-pass',this)" type="button">👁</button></div></div>
+        <div class="sfield"><label>Ekip Şifresi</label>
+          <div class="pw-row"><input class="sinp" id="ct-pass" type="password" placeholder="Arkadaşlarına vereceğin şifre"/>
+          <button class="pw-eye" onclick="tpw('ct-pass',this)" type="button">👁</button></div>
+        </div>
         <div class="settings-section">
           <div class="settings-title">⚙️ Ekip Ayarları</div>
           <div class="sfield"><label>Maksimum Üye Sayısı</label>
-            <select class="sinp" id="ct-maxmember">
-              <option value="0">Sınırsız</option>
-              <option value="5">5 kişi</option>
-              <option value="10" selected>10 kişi</option>
-              <option value="20">20 kişi</option>
-              <option value="50">50 kişi</option>
-            </select>
+            <select class="sinp" id="ct-maxm"><option value="0">Sınırsız</option><option value="5">5 kişi</option><option value="10" selected>10 kişi</option><option value="20">20 kişi</option><option value="50">50 kişi</option></select>
           </div>
-          <div class="sfield"><label>Üye Başı Maksimum Tahmin</label>
-            <select class="sinp" id="ct-maxtahmin">
-              <option value="1" selected>1 tahmin (standart)</option>
-              <option value="3">3 tahmin</option>
-              <option value="5">5 tahmin</option>
-              <option value="0">Sınırsız</option>
-            </select>
+          <div class="sfield"><label>Üye Başı Maksimum Tahmin Sayısı</label>
+            <select class="sinp" id="ct-maxp"><option value="1" selected>1 tahmin</option><option value="3">3 tahmin</option><option value="5">5 tahmin</option><option value="0">Sınırsız</option></select>
           </div>
-          <div class="sfield"><label>Ekip Görünürlüğü</label>
-            <select class="sinp" id="ct-visibility">
-              <option value="private" selected>Gizli (sadece şifreyle katılım)</option>
-              <option value="public">Herkese Açık (şifresiz katılım)</option>
-            </select>
+          <div class="sfield"><label>Katılım</label>
+            <select class="sinp" id="ct-vis"><option value="private" selected>Gizli — sadece şifreyle</option><option value="public">Açık — şifresiz katılım</option></select>
           </div>
         </div>
         <p class="serr" id="ct-err"></p>
@@ -435,37 +550,43 @@ function showCreateTeamPage(){
 async function doCreateTeam(){
   const name=document.getElementById('ct-name').value.trim();
   const pass=document.getElementById('ct-pass').value;
-  const maxMember=parseInt(document.getElementById('ct-maxmember').value);
-  const maxTahmin=parseInt(document.getElementById('ct-maxtahmin').value);
-  const visibility=document.getElementById('ct-visibility').value;
+  const maxMember=parseInt(document.getElementById('ct-maxm').value);
+  const maxPred=parseInt(document.getElementById('ct-maxp').value);
+  const vis=document.getElementById('ct-vis').value;
   const err=document.getElementById('ct-err');
   if(!name||name.length<2){err.textContent='Ekip adı en az 2 karakter.';return;}
-  if(visibility==='private'&&!pass){err.textContent='Gizli ekip için şifre gerekli.';return;}
+  if(vis==='private'&&!pass){err.textContent='Gizli ekip için şifre gerekli.';return;}
   err.textContent='Kontrol ediliyor...';
   try{
-    const ex=await DB.getTeam(name);
-    if(ex&&ex.length&&ex[0].user_id!==S.user.id){err.textContent='Bu ekip adı alınmış, başka bir ad seç.';return;}
-    S.preds.team_name=name;
-    S.preds.team_pass=pass||'';
-    S.preds.team_settings={maxMember,maxTahmin,visibility};
-    await saveAll();
+    const ex=await DB.getTeamByName(name);
+    if(ex&&ex.length){err.textContent='Bu ekip adı alınmış, başka bir ad seç.';return;}
+    const pwHash=pass?await hashPw(pass):'';
+    const res=await DB.createTeam(name,pwHash,S.user.id,{max_members:maxMember,max_predictions:maxPred,visibility:vis});
+    if(!res||!res.length){err.textContent='Oluşturulamadı.';return;}
+    const team=res[0];
+    await DB.joinTeamMember(team.id,S.user.id);
+    S.myTeams.push(team);
     toast('Ekip kuruldu: '+name+' 🎉');
-    showTeamMenu();
+    showTeamHub();
   }catch(e){err.textContent='Hata: '+e.message;}
 }
 
 // ── EKİBE KATIL ───────────────────────────────────────────────
-function showJoinTeamPage(){
+function showJoinTeam(fromPredict=false){
+  setMode('menu');
   mc().innerHTML=`
     <div class="page">
-      <button class="back-btn" onclick="showTeamMenu()">‹ Geri</button>
+      <button class="back-btn" onclick="${fromPredict?'showStartPredict()':'showTeamHub()'}">‹ Geri</button>
       <div class="sum-title" style="margin-top:12px">🤝 Ekibe Katıl</div>
       <p class="page-sub">Arkadaşından aldığın ekip adı ve şifreyle katıl.</p>
       <div class="form-card">
         <div class="sfield"><label>Ekip Adı</label><input class="sinp" id="jt-name" placeholder="Ekip adını gir"/></div>
-        <div class="sfield"><label>Ekip Şifresi</label><div class="pw-row"><input class="sinp" id="jt-pass" type="password" placeholder="Şifre (herkese açık ekiplerde boş bırak)"/><button class="pw-eye" onclick="tpw('jt-pass',this)" type="button">👁</button></div></div>
+        <div class="sfield"><label>Ekip Şifresi <small>(açık ekiplerde boş bırak)</small></label>
+          <div class="pw-row"><input class="sinp" id="jt-pass" type="password" placeholder="••••••"/>
+          <button class="pw-eye" onclick="tpw('jt-pass',this)" type="button">👁</button></div>
+        </div>
         <p class="serr" id="jt-err"></p>
-        <button class="sbtn" onclick="doJoinTeam()">Ekibe Katıl →</button>
+        <button class="sbtn" onclick="doJoinTeam()">Katıl →</button>
       </div>
     </div>`;
 }
@@ -477,36 +598,64 @@ async function doJoinTeam(){
   if(!name){err.textContent='Ekip adı gir.';return;}
   err.textContent='Kontrol ediliyor...';
   try{
-    const ex=await DB.getTeam(name);
+    const ex=await DB.getTeamByName(name);
     if(!ex||!ex.length){err.textContent='Bu isimde ekip bulunamadı.';return;}
-    const settings=ex[0].team_settings||{};
-    const teamPass=ex[0].team_pass||'';
-    if(settings.visibility!=='public'&&teamPass&&teamPass!==pass){err.textContent='Ekip şifresi yanlış.';return;}
-    S.preds.team_name=name;
-    S.preds.team_pass=pass;
-    await saveAll();
+    const team=ex[0];
+    // Zaten üye mi?
+    if(S.myTeams.find(t=>t.id===team.id)){err.textContent='Zaten bu ekibin üyesin.';return;}
+    // Şifre kontrolü
+    if(team.visibility!=='public'&&team.password_hash){
+      const h=await hashPw(pass);
+      if(h!==team.password_hash){err.textContent='Ekip şifresi yanlış.';return;}
+    }
+    // Maksimum üye kontrolü
+    if(team.max_members>0){
+      const members=await DB.getTeamMembers(team.id);
+      if(members&&members.length>=team.max_members){err.textContent='Ekip üye kapasitesi dolmuş.';return;}
+    }
+    await DB.joinTeamMember(team.id,S.user.id);
+    S.myTeams.push(team);
     toast('Ekibe katıldın: '+name+' 🎉');
-    showTeamMenu();
+    showTeamHub();
   }catch(e){err.textContent='Hata: '+e.message;}
 }
 
 // ── KAYDET ────────────────────────────────────────────────────
-async function saveAll(){
-  if(!S.user){toast('Önce giriş yapmalısın!','err');return;}
-  if(IS_LOCKED){toast('Tahminler kilitlendi.','err');return;}
+async function savePred(){
+  if(!S.user)throw new Error('Giriş yapılmamış');
+  if(IS_LOCKED)throw new Error('Tahminler kilitlendi');
   await DB.savePred(S.user.id,{
-    group_rankings:S.preds.group_rankings,bracket:S.preds.bracket,champion:S.preds.champion,
-    best8:S.preds.best8||[],team_name:S.preds.team_name||null,team_pass:S.preds.team_pass||null,
-    team_settings:S.preds.team_settings||{},public:S.preds.share_public,
+    group_rankings:S.preds.group_rankings,
+    bracket:S.preds.bracket,
+    champion:S.preds.champion,
+    best8:S.preds.best8||[],
+    public:S.preds.public,
   });
-  toast('Kaydedildi ✓');
+}
+
+async function saveAll(){
+  try{
+    await savePred();
+    toast('Kaydedildi ✓');
+  }catch(e){toast('Kayıt hatası: '+e.message,'err');}
+}
+
+// Grup geçişlerinde otomatik kayıt (sessiz)
+let _autoSaveTimer=null;
+function autoSave(){
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer=setTimeout(async()=>{
+    if(S.user&&!IS_LOCKED){
+      try{await savePred();}catch(e){}
+    }
+  },2000);
 }
 
 // ── STEP BAR ──────────────────────────────────────────────────
 function renderStepBar(){
   const bar=document.getElementById('step-bar');
   const step=STEPS[S.currentStep];
-  let lbl=step.type==='group'?`Grup ${step.id}`:step.type==='summary'?'Grup Özeti':step.type==='best8'?'En İyi 8 Üçüncü':step.label;
+  const lbl=step.type==='group'?`Grup ${step.id}`:step.type==='summary'?'Grup Özeti':step.type==='best8'?'En İyi 8 Üçüncü':step.label;
   const pct=Math.round((S.currentStep/(STEPS.length-1))*100);
   bar.innerHTML=`<div class="sb-wrap">
     <button class="sb-back${S.currentStep===0?' ghost':''}" onclick="stepNav(-1)">‹</button>
@@ -518,7 +667,14 @@ function renderStepBar(){
     <button class="sb-home-big" onclick="showMainMenu()">🏠 Ana Menü</button>
   </div>`;
 }
-function stepNav(dir){const n=S.currentStep+dir;if(n<0||n>=STEPS.length)return;S.currentStep=n;renderCurrentStep();}
+
+function stepNav(dir){
+  const n=S.currentStep+dir;
+  if(n<0||n>=STEPS.length)return;
+  S.currentStep=n;
+  autoSave();
+  renderCurrentStep();
+}
 
 function renderCurrentStep(){
   renderStepBar();
@@ -539,7 +695,7 @@ function renderGroup(gid){
         <div class="grp-badge">Grup ${gid}</div>
         <button class="btn-fix" onclick="showFixture('${gid}')">📅 Fikstür</button>
       </div>
-      <p class="grp-hint">${locked?'🔒 Tahminler kilitlendi':'↕ Sürükle-bırak ile tahmin sıranı belirle'}</p>
+      <p class="grp-hint">${locked?'🔒 Kilitli':'↕ Sürükle-bırak ile sırala'}</p>
       <div class="rank-table">
         <div id="rlist-${gid}">${ranking.map((n,i)=>rowHtml(n,i,gid,locked)).join('')}</div>
       </div>
@@ -550,17 +706,17 @@ function renderGroup(gid){
   if(!locked)initDrag(gid);
 }
 
-function rowHtml(name,i,gid,locked){
-  const f=getFlag(name);
+function rowHtml(nm,i,gid,locked){
+  const f=getFlag(nm);
   const badges=['b-pass','b-pass','b-third','b-out'];
   const labels=['Gruptan Geçer ✓','Gruptan Geçer ✓','En İyi 3. Adayı','Elenir ✗'];
   const descs=["1. sıra — Son 32'ye gider","2. sıra — Son 32'ye gider","3. sıra — En iyi 8 havuzuna girer","4. sıra — turnuva bitti"];
-  return `<div class="rank-row pos-${i+1}" draggable="${!locked}" data-idx="${i}" data-name="${name}"
+  return`<div class="rank-row pos-${i+1}" draggable="${!locked}" data-idx="${i}" data-name="${nm}"
     ${!locked?`ondragstart="ds(event,'${gid}',${i})" ondragover="dov(event)" ondrop="dp(event,'${gid}')" ondragend="de()"
     ontouchstart="ts(event,'${gid}')" ontouchmove="tm(event)" ontouchend="te(event,'${gid}')" style="touch-action:none"`:''}
   >
     <div class="rr-num">${i+1}</div>
-    <div class="rr-team"><span class="rr-flag">${f}</span><div class="rr-info"><div class="rr-name">${name}</div><div class="rr-desc">${descs[i]}</div></div></div>
+    <div class="rr-team"><span class="rr-flag">${f}</span><div class="rr-info"><div class="rr-name">${nm}</div><div class="rr-desc">${descs[i]}</div></div></div>
     <div class="rr-badge ${badges[i]}">${labels[i]}</div>
     <div class="rr-drag">${locked?'':'⠿'}</div>
   </div>`;
@@ -586,7 +742,6 @@ function te(e,gid){
   _tr=null;_tg=null;renderGroup(gid);
 }
 
-// ── FİKSTÜR ──────────────────────────────────────────────────
 function showFixture(gid){
   const g=GROUPS[gid];
   openModal(`<div class="modal-head"><span>⚽ Grup ${gid} Fikstürü</span><button class="modal-close" onclick="closeModal()">✕</button></div>
@@ -599,7 +754,6 @@ function showFixture(gid){
     </div>`);
 }
 
-// ── ÖZET ──────────────────────────────────────────────────────
 function renderSummary(){
   mc().innerHTML=`
     <div class="page">
@@ -618,13 +772,12 @@ function renderSummary(){
     </div>`;
 }
 
-// ── EN İYİ 8 ──────────────────────────────────────────────────
 function renderBest8(){
   const thirds=S.allThirds();const sel=S.preds.best8||[];const locked=IS_LOCKED;
   mc().innerHTML=`
     <div class="page">
       <div class="best8-header"><div class="best8-title">🥉 En İyi 8 Üçüncü</div>
-        <div class="best8-sub">12 gruptan 3. sırayı bitiren takımların en iyisi 8 tanesi Son 32'ye katılır.</div>
+        <div class="best8-sub">12 gruptan 3. sıra bitiren takımların en iyisi 8 tanesi Son 32'ye katılır.</div>
       </div>
       <div class="best8-counter"><div class="b8c-bar"><div class="b8c-fill" style="width:${Math.round(sel.length/8*100)}%"></div></div>
         <span class="b8c-txt"><b>${sel.length}</b>/8 seçildi</span>
@@ -632,20 +785,19 @@ function renderBest8(){
       ${locked?`<div class="locked-banner">🔒 Tahminler kilitlendi.</div>`:''}
       <div class="best8-list">
         ${thirds.map(t=>`<div class="b8-row${sel.includes(t.name)?' b8-sel':''}" ${!locked?`onclick="toggleBest8('${t.name.replace(/'/g,"\\'")}')"`:''}">
-          <div class="b8-left"><span class="b8-flag">${t.flag}</span><div class="b8-info"><div class="b8-name">${t.name}</div><div class="b8-group">Grup ${t.gid} — 3. sıra</div></div></div>
+          <div class="b8-left"><span class="b8-flag">${t.flag}</span><div class="b8-info"><div class="b8-name">${t.name}</div><div class="b8-group">Grup ${t.gid} · 3. sıra</div></div></div>
           <div class="b8-check">${sel.includes(t.name)?'✓':''}</div>
         </div>`).join('')}
       </div>
       <div class="page-actions">
         ${sel.length===8||locked
           ?`<button class="btn-primary btn-next" onclick="stepNav(1)">Son 32'ye Geç →</button>`
-          :`<p class="pick-warn">⚠️ 8 takım seçmelisin (${8-sel.length} kaldı)</p>`}
+          :`<p class="pick-warn">⚠️ ${8-sel.length} takım daha seç</p>`}
       </div>
     </div>`;
 }
-function toggleBest8(n){if(IS_LOCKED)return;if(!S.toggleBest8(n)){toast('Zaten 8 takım seçtiniz!','err');return;}renderBest8();}
+function toggleBest8(n){if(IS_LOCKED)return;if(!S.toggleBest8(n)){toast('Zaten 8 seçildi!','err');return;}renderBest8();}
 
-// ── ELİMİNASYON ───────────────────────────────────────────────
 function renderElim(rid,label,n){
   const locked=IS_LOCKED;
   const matches=Array.from({length:n},(_,i)=>{const[t1,t2]=S.matchTeams(rid,i);return{i,t1,t2,w:S.winner(rid,i)};});
@@ -655,28 +807,50 @@ function renderElim(rid,label,n){
     <div class="page">
       <div class="elim-title">${label}</div>
       <div class="elim-sub">${n} maç · ${rid==='final'?'Şampiyonu belirle':'Kazananı seçmek için tıkla'}</div>
-      ${locked?`<div class="locked-banner">🔒 8 Haziran'dan itibaren tahminler kilitlendi.</div>`:''}
+      ${locked?`<div class="locked-banner">🔒 Tahminler kilitlendi.</div>`:''}
       <div class="matches-list">${matches.map(m=>matchHtml(m,rid,locked)).join('')}</div>
       <div class="page-actions">
         ${allDone||locked
-          ?isLast?`
+          ? isLast ? `
             <div class="final-save-card">
               <div class="fsc-title">🏆 Tahminleri Kaydet</div>
-              <div class="fsc-champ">${S.preds.champion?`Şampiyon: ${getFlag(S.preds.champion)} <b>${S.preds.champion}</b>`:''}</div>
-              <label class="ptl-row" style="margin:12px 0">
-                <input type="checkbox" id="pub-chk" ${S.preds.share_public?'checked':''} onchange="S.preds.share_public=this.checked"/>
+              ${S.preds.champion?`<div class="fsc-champ">Şampiyon: ${getFlag(S.preds.champion)} <b>${S.preds.champion}</b></div>`:''}
+              <label class="pool-toggle-row" style="margin:14px 0">
+                <input type="checkbox" id="pub-chk" ${S.preds.public?'checked':''} onchange="S.preds.public=this.checked"/>
                 <span class="ptl-box"></span>
                 <div class="ptl-text">
                   <div class="ptl-title">Genel havuza gönder</div>
-                  <div class="ptl-sub">${S.preds.team_name?`Hem <b>${S.preds.team_name}</b> ekibine hem genel tabloya ekle`:'Herkese açık liderlik tablosuna ekle (kişi başı max 1 tahmin)'}</div>
+                  <div class="ptl-sub">Herkese açık liderlik tablosuna ekle (kişi başı max 1 tahmin)</div>
                 </div>
               </label>
-              <button class="sbtn" onclick="saveAll().then(()=>{toast('Tahminler kaydedildi! 🎉');setTimeout(showMainMenu,800)})">💾 Tahminleri Kaydet</button>
+              ${S.myTeams.length>0?`<div style="margin-bottom:14px">
+                <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Ekiplerim</div>
+                ${S.myTeams.map(t=>`<label class="pool-toggle-row" style="margin-bottom:8px">
+                  <input type="checkbox" class="team-save-chk" data-tid="${t.id}" ${S.myTeamPredIds.includes(t.id)?'checked':''}/>
+                  <span class="ptl-box"></span>
+                  <div class="ptl-text"><div class="ptl-title">${t.name} ekibine gönder</div></div>
+                </label>`).join('')}
+              </div>`:''}
+              <button class="sbtn" onclick="doFinalSave()">💾 Tahminleri Kaydet</button>
             </div>`
-            :`<button class="btn-primary btn-next" onclick="stepNav(1)">Sonraki Tur →</button>`
-          :`<p class="pick-warn">⚠️ Devam etmek için tüm kazananları seç</p>`}
+          : `<button class="btn-primary btn-next" onclick="stepNav(1)">Sonraki Tur →</button>`
+          : `<p class="pick-warn">⚠️ Devam etmek için tüm kazananları seç</p>`}
       </div>
     </div>`;
+}
+
+async function doFinalSave(){
+  S.preds.public=document.getElementById('pub-chk').checked;
+  const newTeamIds=[];
+  document.querySelectorAll('.team-save-chk').forEach(chk=>{if(chk.checked)newTeamIds.push(chk.dataset.tid);});
+  try{
+    await savePred();
+    for(const tid of newTeamIds){if(!S.myTeamPredIds.includes(tid))await DB.addToTeam(tid,S.user.id);}
+    for(const tid of S.myTeamPredIds){if(!newTeamIds.includes(tid))await DB.removeFromTeam(tid,S.user.id);}
+    S.myTeamPredIds=newTeamIds;
+    toast('Tahminler kaydedildi! 🎉');
+    setTimeout(showMainMenu,800);
+  }catch(e){toast('Kayıt hatası: '+e.message,'err');}
 }
 
 function matchHtml(m,rid,locked){
@@ -692,74 +866,61 @@ function matchHtml(m,rid,locked){
 }
 function pick(rid,mi,team){if(IS_LOCKED)return;S.setWinner(rid,mi,team);if(rid==='final')toast('🏆 Şampiyon: '+team+' '+getFlag(team),'ok');renderElim(STEPS[S.currentStep].id,STEPS[S.currentStep].label,STEPS[S.currentStep].n);}
 
-// ── SEKMELER ──────────────────────────────────────────────────
-function setAppMode(mode){
-  const bar=document.getElementById('step-bar');
-  const nav=document.querySelector('.bottom-nav');
-  const fab=document.querySelector('.save-fab');
-  if(mode==='predict'){bar.style.display='block';nav.style.display='flex';fab.style.display='flex';}
-  else{bar.style.display='none';nav.style.display='none';fab.style.display='none';}
-}
-function showTab(tab){
-  setAppMode('tab');
-  document.querySelector('.bottom-nav').style.display='flex';
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
-  if(tab==='leaderboard')renderLeaderboard();else renderStats();
-}
-function mc(){return document.getElementById('main-content');}
-
 // ── LİDERLİK ─────────────────────────────────────────────────
-function renderLeaderboard(){mc().innerHTML=`<div class="page"><div class="lb-loading">⏳ Yükleniyor...</div></div>`;loadLb();}
+function showLeaderboard(){
+  setMode('menu');
+  mc().innerHTML=`<div class="page"><div class="lb-loading">⏳ Yükleniyor...</div></div>`;
+  loadLb();
+}
 async function loadLb(){
   try{
     const[users,preds]=await Promise.all([DB.allUsers(),DB.allPreds()]);
     const pm={};(preds||[]).forEach(p=>pm[p.user_id]=p);
-    const rows=(users||[]).map(u=>{const p=pm[u.id]||{};const r=p.group_rankings||{};const done=GRP.filter(g=>{const rk=r[g];return rk&&rk.length===4&&rk.some((t,i)=>t!==GROUPS[g].t[i].n);}).length;return{id:u.id,name:u.username,pts:done*2,pct:Math.round(done/12*100),pub:p.public!==false};})
-      .filter(u=>u.pub).sort((a,b)=>b.pts-a.pts||b.pct-a.pct);
+    const rows=(users||[]).map(u=>{
+      const p=pm[u.id]||{};const r=p.group_rankings||{};
+      const done=GRP.filter(g=>{const rk=r[g];return rk&&rk.length===4&&rk.some((t,i)=>t!==GROUPS[g].t[i].n);}).length;
+      return{id:u.id,name:u.username,pts:done*2,pct:Math.round(done/12*100),pub:p.public!==false};
+    }).filter(u=>u.pub).sort((a,b)=>b.pts-a.pts||b.pct-a.pct);
     mc().innerHTML=`<div class="page">
       <button class="back-btn" onclick="showMainMenu()">‹ Ana Menü</button>
       <div class="page-title" style="margin-top:12px">🏅 Liderlik Tablosu</div>
-      <div class="pts-key">Grup geçişi <b>2p</b> · Son 32 <b>5p</b> · Çeyrek <b>7p</b> · Yarı <b>10p</b> · Final <b>15p</b> · Şampiyon <b>20p</b></div>
+      <div class="pts-key">Grup <b>2p</b> · Son 32 <b>5p</b> · Çeyrek <b>7p</b> · Yarı <b>10p</b> · Final <b>15p</b> · Şampiyon <b>20p</b></div>
       <div class="lb-table">
         <div class="lb-hdr-row"><div>#</div><div>Kullanıcı</div><div style="text-align:right">Puan</div><div style="text-align:right">Tamaml.</div></div>
-        ${rows.length===0?'<div class="lb-empty">Henüz tahmin yapan yok.</div>':rows.map((u,i)=>{
+        ${rows.length===0?'<div class="lb-empty">Henüz tahmin yok.</div>':rows.map((u,i)=>{
           const m=i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;const me=S.user&&u.id===S.user.id;
           return`<div class="lb-row${me?' me':''}"><div class="lb-rank">${m}</div><div class="lb-name">${u.name}${me?'<span class="me-tag">★</span>':''}</div><div class="lb-pts" style="text-align:right">${u.pts}</div><div class="lb-pct" style="text-align:right">%${u.pct}</div></div>`;
         }).join('')}
       </div>
     </div>`;
-  }catch(e){mc().innerHTML=`<div class="page"><p style="color:var(--red)">Yüklenemedi: ${e.message}</p></div>`;}
-}
-
-// ── İSTATİSTİK ────────────────────────────────────────────────
-function renderStats(){mc().innerHTML=`<div class="page"><div class="lb-loading">⏳ Yükleniyor...</div></div>`;loadStats();}
-async function loadStats(){
-  try{
-    const[users,preds]=await Promise.all([DB.allUsers(),DB.allPreds()]);
-    const total=users?.length||0,withP=preds?.length||0,withC=(preds||[]).filter(p=>p.champion).length;
-    const cc={};(preds||[]).forEach(p=>{if(p.champion)cc[p.champion]=(cc[p.champion]||0)+1;});
-    const top=Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,8);const max=top[0]?.[1]||1;
-    mc().innerHTML=`<div class="page">
-      <button class="back-btn" onclick="showMainMenu()">‹ Ana Menü</button>
-      <div class="page-title" style="margin-top:12px">📊 İstatistikler</div>
-      <div class="stat-cards"><div class="stat-card"><div class="sc-val">${total}</div><div class="sc-lbl">Kullanıcı</div></div><div class="stat-card"><div class="sc-val">${withP}</div><div class="sc-lbl">Tahmin Yapan</div></div><div class="stat-card"><div class="sc-val">${withC}</div><div class="sc-lbl">Şampiyon Seçen</div></div></div>
-      <div class="stats-sub">En Çok Seçilen Şampiyonlar</div>
-      <div class="bar-list">${top.length===0?'<p style="color:var(--text3);font-size:13px">Henüz veri yok.</p>':top.map(([n,c])=>`<div class="bar-row"><div class="bar-lbl">${getFlag(n)} ${n}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(c/max*100)}%"></div></div><div class="bar-cnt">${c}</div></div>`).join('')}</div>
-    </div>`;
-  }catch(e){}
+  }catch(e){mc().innerHTML=`<div class="page"><button class="back-btn" onclick="showMainMenu()">‹ Geri</button><p style="color:var(--red);margin-top:12px">Yüklenemedi: ${e.message}</p></div>`;}
 }
 
 // ── BAŞLATMA ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',async()=>{
-  loadTheme();setInterval(updateHeader,60000);
+  loadTheme();
+  setInterval(updateHeader,60000);
   document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
-  // localStorage — tarayıcı kapansa bile oturumu hatırlar
+  document.querySelector('.save-fab').addEventListener('click',saveAll);
   const saved=localStorage.getItem('wc_user');
   if(saved){
     try{
-      const user=JSON.parse(saved);S.user=user;
-      const p=await DB.getPred(user.id);
-      if(p){S.preds.group_rankings=p.group_rankings||{};S.preds.bracket=p.bracket||{};S.preds.champion=p.champion||'';S.preds.best8=p.best8||[];S.preds.team_name=p.team_name||'';S.preds.team_pass=p.team_pass||'';S.preds.team_settings=p.team_settings||{};S.preds.share_public=p.public!==false;}
+      const user=JSON.parse(saved);
+      S.user=user;
+      const[pred,teamsRaw,teamPredRaw]=await Promise.all([
+        DB.getPred(user.id),
+        DB.getMyTeams(user.id),
+        DB.getMyTeamPreds(user.id),
+      ]);
+      if(pred){
+        S.preds.group_rankings=pred.group_rankings||{};
+        S.preds.bracket=pred.bracket||{};
+        S.preds.champion=pred.champion||'';
+        S.preds.best8=pred.best8||[];
+        S.preds.public=pred.public!==false;
+      }
+      S.myTeams=(teamsRaw||[]).map(r=>r.teams).filter(Boolean);
+      S.myTeamPredIds=(teamPredRaw||[]).map(r=>r.team_id);
       document.getElementById('splash-screen').style.display='none';
       document.getElementById('main-app').style.display='block';
       updateHeader();showMainMenu();return;
