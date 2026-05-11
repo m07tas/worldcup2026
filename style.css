@@ -820,3 +820,36 @@ body { background: var(--bg); color: var(--text); }
 .ti-btn { padding:5px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-size:12px;font-weight:700; }
 .ti-btn:hover { background:var(--bg4); }
 .ti-leave { color:var(--red)!important;background:var(--red-bg)!important;border-color:var(--red-bd)!important; }
+
+/* ── v13 ────────────────────────────────────── */
+.pool-note { font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:4px; }
+.pred-card { background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px; }
+.pred-card-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px; }
+.pred-card-title { font-size:14px;font-weight:700;color:var(--text); }
+.pred-card-sys { font-size:11px;font-weight:700;padding:3px 9px;background:var(--bg3);border-radius:10px;color:var(--text3); }
+
+/* Grup maç kartları */
+.match-list-group { display:flex;flex-direction:column;gap:8px;margin-bottom:12px; }
+.group-match-card { background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.gmc-date { padding:5px 12px;background:var(--bg3);font-size:10px;color:var(--text3);font-weight:700;border-bottom:1px solid var(--border); }
+.gmc-teams { display:grid;grid-template-columns:1fr 36px 1fr;align-items:stretch;min-height:48px; }
+.gmc-team { background:transparent;border:none;padding:12px 10px;font-size:13px;font-weight:700;color:var(--text);cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:6px; }
+.gmc-team:first-child { justify-content:flex-start; }
+.gmc-team:last-child { justify-content:flex-end;flex-direction:row-reverse; }
+.gmc-team.selected { background:var(--green-bg);color:var(--green); }
+.gmc-team:hover:not(.selected) { background:var(--bg3); }
+.gmc-draw { background:transparent;border-left:1px solid var(--border);border-right:1px solid var(--border);font-size:12px;font-weight:800;color:var(--text3);cursor:pointer;transition:background .12s;display:flex;align-items:center;justify-content:center; }
+.gmc-draw.selected { background:var(--gold-bg);color:var(--gold); }
+.gmc-draw:hover:not(.selected) { background:var(--bg3); }
+
+/* Puan önizleme */
+.grp-topbar { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px; }
+.grp-pts-preview { display:flex;gap:4px;flex-wrap:wrap; }
+.pts-chip { font-size:10px;font-weight:700;padding:2px 7px;background:var(--bg3);border-radius:8px;color:var(--text2); }
+
+/* Eşitlik çözümü */
+.tie-section { background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:12px;padding:12px;margin-bottom:12px; }
+.tie-title { font-size:13px;font-weight:700;color:var(--gold);margin-bottom:4px; }
+.tie-sub { font-size:12px;color:var(--text3);margin-bottom:10px; }
+.tie-group { margin-bottom:8px; }
+.tie-group-label { font-size:11px;color:var(--text3);margin-bottom:6px; }
