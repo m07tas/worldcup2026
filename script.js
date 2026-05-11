@@ -91,8 +91,7 @@ const DB={
     if(ex&&ex.length)return this.r(`/rest/v1/predictions?user_id=eq.${uid}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body});
     return this.r('/rest/v1/predictions',{method:'POST',headers:{'Prefer':'return=minimal'},body});
   },
-  // Ekip: predictions tablosundaki team_name alanı üzerinden
-  getTeam(name){return this.r(`/rest/v1/predictions?team_name=eq.${encodeURIComponent(name)}&select=user_id,team_name&limit=1`);},
+  getTeamByName(name){return this.r(`/rest/v1/predictions?team_name=eq.${encodeURIComponent(name)}&select=user_id,team_name,team_pass&limit=1`);},
   getTeamMembers(name){return this.r(`/rest/v1/predictions?team_name=eq.${encodeURIComponent(name)}&select=user_id,group_rankings,bracket,champion`);},
   allUsers(){return this.r('/rest/v1/users?select=id,username');},
   allPreds(){return this.r('/rest/v1/predictions?select=user_id,group_rankings,bracket,champion,team_name,public');},
@@ -267,13 +266,14 @@ async function onLoginSuccess(user){
       S.preds.champion=p.champion||'';
       S.preds.best8=p.best8||[];
       S.preds.team_name=p.team_name||'';
-      S.preds.share_public=p.public!==false; // varsayılan true
+      S.preds.team_pass=p.team_pass||'';
+      S.preds.share_public=p.public!==false;
     }
   }catch(e){console.warn('Tahmin yüklenemedi:',e);}
   document.getElementById('splash-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
   updateHeader();
-  showTab('predict');
+  showMainMenu();
   toast('Hoş geldin, '+user.username+'! 👋');
 }
 
@@ -288,7 +288,239 @@ function doLogout(){
   renderSplashForm();
 }
 
-// ── HEADER ────────────────────────────────────────────────────
+// ── ANA MENÜ ──────────────────────────────────────────────────
+function showMainMenu(){
+  // Alt navbar'ı gizle - menü ekranında gerek yok
+  document.querySelector('.bottom-nav').style.display='none';
+  document.getElementById('step-bar').style.display='none';
+  document.querySelector('.save-fab').style.display='none';
+
+  const hasPred = S.doneCount()>0 || Object.keys(S.preds.bracket).length>0;
+  const teamName = S.preds.team_name;
+
+  document.getElementById('main-content').innerHTML=`
+    <div class="menu-page">
+      <div class="menu-hero">
+        <div class="menu-welcome">Hoş geldin,</div>
+        <div class="menu-username">${S.user.username}</div>
+        ${teamName?`<div class="menu-team-badge">👥 ${teamName}</div>`:''}
+      </div>
+      <div class="menu-cards">
+        <button class="menu-card menu-card-primary" onclick="showPoolSelect()">
+          <div class="mc-icon">⚽</div>
+          <div class="mc-text">
+            <div class="mc-title">Tahmine Başla</div>
+            <div class="mc-sub">${hasPred?'Tahminlerini güncelle':'Grupları tahmin et, şampiyonu seç'}</div>
+          </div>
+          <div class="mc-arrow">›</div>
+        </button>
+        ${hasPred?`<button class="menu-card" onclick="showPastPreds()">
+          <div class="mc-icon">📋</div>
+          <div class="mc-text">
+            <div class="mc-title">Tahminlerime Göz At</div>
+            <div class="mc-sub">Mevcut tahminlerini görüntüle</div>
+          </div>
+          <div class="mc-arrow">›</div>
+        </button>`:''}
+        <button class="menu-card" onclick="showNavApp()">
+          <div class="mc-icon">🏅</div>
+          <div class="mc-text">
+            <div class="mc-title">Liderlik & İstatistik</div>
+            <div class="mc-sub">Sıralamaları ve istatistikleri gör</div>
+          </div>
+          <div class="mc-arrow">›</div>
+        </button>
+      </div>
+    </div>`;
+}
+
+function showNavApp(){
+  document.querySelector('.bottom-nav').style.display='flex';
+  document.querySelector('.save-fab').style.display='flex';
+  showTab('leaderboard');
+}
+
+// ── HAVUZ SEÇİMİ ──────────────────────────────────────────────
+function showPoolSelect(){
+  document.getElementById('main-content').innerHTML=`
+    <div class="pool-page">
+      <button class="pool-back" onclick="showMainMenu()">‹ Geri</button>
+      <div class="pool-hero">
+        <div class="pool-title">Tahminini nereye gönderelim?</div>
+        <div class="pool-sub">İstersen hem genel havuza hem de ekibine dahil edebilirsin.</div>
+      </div>
+      <div class="pool-cards">
+
+        <button class="pool-card pool-general" onclick="startPredict(null,true)">
+          <div class="pc-icon">🌍</div>
+          <div class="pc-body">
+            <div class="pc-title">Genel Havuz</div>
+            <div class="pc-desc">Herkesin görebileceği genel liderlik tablosuna katıl.</div>
+          </div>
+          <div class="pc-check">›</div>
+        </button>
+
+        <button class="pool-card pool-create" onclick="showCreateTeamScreen()">
+          <div class="pc-icon">🏗️</div>
+          <div class="pc-body">
+            <div class="pc-title">Ekip Kur</div>
+            <div class="pc-desc">Arkadaşlarınla özel bir ekip oluştur. Sadece ekibinle yarışın.</div>
+          </div>
+          <div class="pc-check">›</div>
+        </button>
+
+        <button class="pool-card pool-join" onclick="showJoinTeamScreen()">
+          <div class="pc-icon">🤝</div>
+          <div class="pc-body">
+            <div class="pc-title">Ekibe Dahil Ol</div>
+            <div class="pc-desc">Arkadaşlarının kurduğu ekibe ekip adı ve şifreyle katıl.</div>
+          </div>
+          <div class="pc-check">›</div>
+        </button>
+
+      </div>
+      ${S.preds.team_name?`<div class="pool-current">Mevcut ekibin: <b>👥 ${S.preds.team_name}</b> — <button class="pool-continue-btn" onclick="startPredict('${S.preds.team_name}',${S.preds.share_public})">Bu ekiple devam et ›</button></div>`:''}
+    </div>`;
+}
+
+function showCreateTeamScreen(){
+  document.getElementById('main-content').innerHTML=`
+    <div class="pool-page">
+      <button class="pool-back" onclick="showPoolSelect()">‹ Geri</button>
+      <div class="pool-hero">
+        <div class="pool-title">🏗️ Ekip Kur</div>
+        <div class="pool-sub">Yeni bir ekip oluştur. Arkadaşların aynı ad ve şifreyle katılabilir.</div>
+      </div>
+      <div class="pool-form">
+        <div class="sfield"><label>Ekip Adı</label><input class="sinp" id="ct-name" placeholder="Örn: Kuzey Yıldızları"/></div>
+        <div class="sfield"><label>Ekip Şifresi</label>
+          <div class="pw-row"><input class="sinp" id="ct-pass" type="password" placeholder="Arkadaşlarına vereceğin şifre"/>
+          <button class="pw-eye" onclick="tpw('ct-pass',this)" type="button">👁</button></div>
+        </div>
+        <p class="serr" id="ct-err"></p>
+        <div class="pool-public-row">
+          <label class="public-toggle-label">
+            <input type="checkbox" id="ct-public" checked/>
+            <span class="ptl-box"></span>
+            <div class="ptl-text">
+              <div class="ptl-title">Genel havuza da dahil et</div>
+              <div class="ptl-sub">Tahminlerin hem ekipte hem genel tabloda görünsün</div>
+            </div>
+          </label>
+        </div>
+        <button class="sbtn" onclick="doCreateTeamAndStart()">Ekibi Kur ve Tahmine Başla →</button>
+      </div>
+    </div>`;
+}
+
+async function doCreateTeamAndStart(){
+  const name=document.getElementById('ct-name').value.trim();
+  const pass=document.getElementById('ct-pass').value;
+  const pub=document.getElementById('ct-public').checked;
+  const err=document.getElementById('ct-err');
+  if(!name||name.length<2){err.textContent='Ekip adı en az 2 karakter.';return;}
+  if(!pass||pass.length<3){err.textContent='Şifre en az 3 karakter.';return;}
+  err.textContent='Kontrol ediliyor...';
+  try{
+    const ex=await DB.getTeamByName(name);
+    if(ex&&ex.length){err.textContent='Bu ekip adı alınmış, başka bir ad seç.';return;}
+    startPredict(name,pub,pass);
+  }catch(e){err.textContent='Hata: '+e.message;}
+}
+
+function showJoinTeamScreen(){
+  document.getElementById('main-content').innerHTML=`
+    <div class="pool-page">
+      <button class="pool-back" onclick="showPoolSelect()">‹ Geri</button>
+      <div class="pool-hero">
+        <div class="pool-title">🤝 Ekibe Dahil Ol</div>
+        <div class="pool-sub">Arkadaşından aldığın ekip adı ve şifreyle katıl.</div>
+      </div>
+      <div class="pool-form">
+        <div class="sfield"><label>Ekip Adı</label><input class="sinp" id="jt-name" placeholder="Ekip adını gir"/></div>
+        <div class="sfield"><label>Ekip Şifresi</label>
+          <div class="pw-row"><input class="sinp" id="jt-pass" type="password" placeholder="Ekip şifresi"/>
+          <button class="pw-eye" onclick="tpw('jt-pass',this)" type="button">👁</button></div>
+        </div>
+        <p class="serr" id="jt-err"></p>
+        <div class="pool-public-row">
+          <label class="public-toggle-label">
+            <input type="checkbox" id="jt-public" checked/>
+            <span class="ptl-box"></span>
+            <div class="ptl-text">
+              <div class="ptl-title">Genel havuza da dahil et</div>
+              <div class="ptl-sub">Tahminlerin hem ekipte hem genel tabloda görünsün</div>
+            </div>
+          </label>
+        </div>
+        <button class="sbtn" onclick="doJoinTeamAndStart()">Ekibe Katıl ve Tahmine Başla →</button>
+      </div>
+    </div>`;
+}
+
+async function doJoinTeamAndStart(){
+  const name=document.getElementById('jt-name').value.trim();
+  const pass=document.getElementById('jt-pass').value;
+  const pub=document.getElementById('jt-public').checked;
+  const err=document.getElementById('jt-err');
+  if(!name){err.textContent='Ekip adı gir.';return;}
+  if(!pass){err.textContent='Şifre gir.';return;}
+  err.textContent='Kontrol ediliyor...';
+  try{
+    const ex=await DB.getTeamByName(name);
+    if(!ex||!ex.length){err.textContent='Bu isimde ekip bulunamadı.';return;}
+    // Şifre kontrolü
+    const teamPass=ex[0].team_pass||'';
+    if(teamPass&&teamPass!==pass){err.textContent='Ekip şifresi yanlış.';return;}
+    startPredict(name,pub,pass);
+  }catch(e){err.textContent='Hata: '+e.message;}
+}
+
+function startPredict(teamName, isPublic, teamPass){
+  S.preds.team_name = teamName||'';
+  S.preds.team_pass = teamPass||S.preds.team_pass||'';
+  S.preds.share_public = isPublic!==false;
+  S.currentStep=0;
+  document.querySelector('.bottom-nav').style.display='flex';
+  document.getElementById('step-bar').style.display='block';
+  document.querySelector('.save-fab').style.display='flex';
+  // Aktif tahmin sekmesi
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab==='predict'));
+  renderCurrentStep();
+}
+
+// ── GEÇMİŞ TAHMİNLER ─────────────────────────────────────────
+function showPastPreds(){
+  document.getElementById('main-content').innerHTML=`
+    <div class="page">
+      <button class="pool-back" onclick="showMainMenu()">‹ Ana Menü</button>
+      <div class="sum-title" style="margin-top:12px">📋 Mevcut Tahminlerim</div>
+      <p class="sum-sub">${S.preds.team_name?`Ekip: 👥 ${S.preds.team_name}`:'Genel havuz'} · ${S.preds.share_public?'Herkese açık':'Sadece ekip'}</p>
+      <div class="sum-table" style="margin-top:12px">
+        ${GROUP_IDS.map(gid=>{
+          const r=S.ranking(gid);
+          const done=S.isGroupDone(gid);
+          return`<div class="sum-row">
+            <div class="sum-gid">Grup ${gid}</div>
+            <div class="sum-teams">
+              ${done
+                ?`<span class="stag pass">${getFlag(r[0])} ${r[0]}</span>
+                  <span class="stag pass">${getFlag(r[1])} ${r[1]}</span>
+                  <span class="stag third">${getFlag(r[2])} ${r[2]}</span>`
+                :`<span class="stag" style="background:var(--bg3);color:var(--text3)">Henüz tahmin yok</span>`}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${S.preds.champion?`<div class="sum-row" style="background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:12px;margin-top:10px;padding:12px 14px">
+        <span style="font-size:13px;font-weight:700;color:var(--gold)">🏆 Şampiyon Tahminin:</span>
+        <span style="margin-left:8px;font-weight:700">${getFlag(S.preds.champion)} ${S.preds.champion}</span>
+      </div>`:''}
+      <div class="page-actions">
+        <button class="btn-primary btn-next" onclick="showPoolSelect()">Tahminleri Güncelle →</button>
+      </div>
+    </div>`;
+}
 function updateHeader(){
   const lock=document.getElementById('hdr-lock');
   if(lock){
@@ -553,9 +785,21 @@ function renderElim(rid,label,n){
       </div>
       <div class="page-actions">
         ${allDone||locked
-          ?`<button class="btn-primary btn-next" onclick="${isLast?'saveAll()':'stepNav(1)'}">
-              ${isLast?'💾 Tahminleri Kaydet':'Sonraki Tur →'}
-            </button>`
+          ?`${isLast?`
+            <div class="final-public-toggle">
+              <label class="public-toggle-label">
+                <input type="checkbox" id="final-public-chk" ${S.preds.share_public?'checked':''} onchange="S.preds.share_public=this.checked"/>
+                <span class="ptl-box"></span>
+                <div class="ptl-text">
+                  <div class="ptl-title">Genel havuza gönderilsin</div>
+                  <div class="ptl-sub">${S.preds.team_name?`Ekibin <b>${S.preds.team_name}</b>'e ek olarak genel tabloya da eklensin`:'Herkese açık genel liderlik tablosuna eklensin'}</div>
+                </div>
+              </label>
+            </div>`:''
+          }
+          <button class="btn-primary btn-next" onclick="${isLast?'saveAll()':'stepNav(1)'}">
+            ${isLast?'💾 Tahminleri Kaydet':'Sonraki Tur →'}
+          </button>`
           :`<p class="pick-warn">⚠️ Devam etmek için tüm kazananları seç</p>`}
       </div>
     </div>`;
@@ -669,6 +913,7 @@ async function saveAll(){
       champion:S.preds.champion,
       best8:S.preds.best8||[],
       team_name:S.preds.team_name||null,
+      team_pass:S.preds.team_pass||null,
       public:S.preds.share_public,
     });
     toast('Tahminler kaydedildi ✓');
@@ -770,7 +1015,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
       document.getElementById('splash-screen').style.display='none';
       document.getElementById('main-app').style.display='block';
       updateHeader();
-      showTab('predict');
+      showMainMenu();
       return;
     }catch(e){sessionStorage.removeItem('wc_user');}
   }

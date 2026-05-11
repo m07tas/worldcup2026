@@ -686,3 +686,79 @@ body { background: var(--bg); color: var(--text); }
 .ptl-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
 .ptl-sub   { font-size: 12px; color: var(--text3); line-height: 1.5; }
 .ptl-sub b { color: var(--gold); }
+
+/* ── ANA MENÜ ────────────────────────────────── */
+.menu-page { padding: 20px 16px; max-width: 480px; margin: 0 auto; }
+.menu-hero  { text-align: center; padding: 24px 0 28px; }
+.menu-welcome  { font-size: 14px; color: var(--text3); }
+.menu-username { font-size: 28px; font-weight: 900; color: var(--text); margin-top: 2px; }
+.menu-team-badge {
+  display: inline-block; margin-top: 8px;
+  padding: 4px 14px; background: var(--gold-bg); border: 1px solid var(--gold-bd);
+  border-radius: 20px; font-size: 13px; color: var(--gold); font-weight: 700;
+}
+.menu-cards { display: flex; flex-direction: column; gap: 10px; }
+.menu-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px; background: var(--bg2); border: 1.5px solid var(--border2);
+  border-radius: 14px; text-align: left; transition: all .15s;
+}
+.menu-card:hover { background: var(--bg3); border-color: var(--border2); transform: translateY(-1px); }
+.menu-card-primary { border-color: var(--green-bd); background: var(--green-bg); }
+.menu-card-primary:hover { background: rgba(0,208,104,.18); }
+.mc-icon  { font-size: 28px; flex-shrink: 0; }
+.mc-text  { flex: 1; }
+.mc-title { font-size: 16px; font-weight: 800; color: var(--text); }
+.mc-sub   { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.mc-arrow { font-size: 22px; color: var(--text3); font-weight: 300; }
+
+/* ── HAVUZ SEÇİMİ ────────────────────────────── */
+.pool-page { padding: 16px; max-width: 480px; margin: 0 auto; }
+.pool-back {
+  background: none; border: none; color: var(--text3);
+  font-size: 15px; font-weight: 700; padding: 0; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 4px;
+}
+.pool-hero { margin-bottom: 20px; }
+.pool-title { font-size: 20px; font-weight: 900; color: var(--text); margin-bottom: 6px; }
+.pool-sub   { font-size: 13px; color: var(--text3); line-height: 1.6; }
+.pool-form  { display: flex; flex-direction: column; gap: 4px; }
+.pool-public-row { margin: 4px 0 16px; }
+.pool-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+
+.pool-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px; border-radius: 14px;
+  text-align: left; transition: all .15s;
+  border: 2px solid var(--border);
+}
+.pool-card:hover { transform: translateY(-1px); }
+.pool-general { background: rgba(29,100,220,.08); border-color: rgba(29,100,220,.25); }
+.pool-general:hover { background: rgba(29,100,220,.15); }
+.pool-create  { background: var(--gold-bg); border-color: var(--gold-bd); }
+.pool-create:hover  { background: rgba(255,183,0,.2); }
+.pool-join    { background: var(--green-bg); border-color: var(--green-bd); }
+.pool-join:hover    { background: rgba(0,208,104,.18); }
+
+.pc-icon  { font-size: 32px; flex-shrink: 0; }
+.pc-body  { flex: 1; }
+.pc-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.pc-desc  { font-size: 12px; color: var(--text3); line-height: 1.5; }
+.pc-check { font-size: 22px; color: var(--text3); }
+
+.pool-current {
+  font-size: 13px; color: var(--text2);
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 10px 14px;
+}
+.pool-current b { color: var(--gold); }
+.pool-continue-btn {
+  background: none; border: none; color: var(--green);
+  font-size: 13px; font-weight: 700; cursor: pointer; padding: 0;
+}
+
+/* ── FİNAL PUBLIC TOGGLE ─────────────────────── */
+.final-public-toggle {
+  background: var(--bg2); border: 1.5px solid var(--border2);
+  border-radius: 12px; padding: 14px; margin-bottom: 10px;
+}
