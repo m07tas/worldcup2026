@@ -607,17 +607,22 @@ body { background: var(--bg); color: var(--text); }
 
 /* ── KUPA GÖRSELİ ────────────────────────────── */
 .trophy-img {
-  width: 90px;
-  height: auto;
+  width: 100px;
+  height: 130px;
   object-fit: contain;
-  filter: drop-shadow(0 0 20px rgba(255,183,0,0.6));
+  object-position: center;
+  background: transparent;
+  mix-blend-mode: normal;
+  filter: drop-shadow(0 4px 24px rgba(255,183,0,0.55));
   animation: float 3s ease-in-out infinite;
+  display: block;
 }
 .hdr-logo .trophy-img {
-  width: 28px;
-  height: auto;
+  width: 26px;
+  height: 34px;
   animation: none;
-  filter: drop-shadow(0 0 6px rgba(255,183,0,0.4));
+  filter: drop-shadow(0 0 5px rgba(255,183,0,0.5));
+  vertical-align: middle;
 }
 
 /* ── EKİP MODAL ──────────────────────────────── */
@@ -628,3 +633,56 @@ body { background: var(--bg); color: var(--text); }
   transition: background .15s;
 }
 .team-opt-btn:hover { background: var(--bg4); }
+
+/* ── EKİP BUTON (HEADER) ─────────────────────── */
+.hdr-team-btn {
+  padding: 3px 8px;
+  background: var(--gold-bg); border: 1px solid var(--gold-bd);
+  border-radius: 12px; color: var(--gold);
+  font-size: 11px; font-weight: 700;
+  max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hdr-chip { gap: 5px !important; flex-wrap: wrap; max-width: 260px; }
+
+/* ── EKİP MODAL ──────────────────────────────── */
+.team-current {
+  background: var(--gold-bg); border: 1px solid var(--gold-bd);
+  border-radius: 10px; padding: 10px 14px;
+  font-size: 13px; color: var(--text2); margin-bottom: 14px;
+}
+.team-current b { color: var(--gold); }
+.team-hint { font-size: 12px; color: var(--text3); margin-bottom: 14px; line-height: 1.6; }
+.team-opts { display: flex; flex-direction: column; gap: 8px; }
+.team-opt-btn {
+  padding: 13px 16px; background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 10px; color: var(--text); font-size: 14px; font-weight: 700;
+  text-align: left; transition: background .15s;
+}
+.team-opt-btn:hover { background: var(--bg4); }
+.team-opt-leave { color: var(--red) !important; background: var(--red-bg) !important; border-color: var(--red-bd) !important; }
+
+/* ── GENEL HAVUZ TOGGLE ───────────────────────── */
+.public-toggle-card {
+  background: var(--bg2); border: 1.5px solid var(--border2);
+  border-radius: 12px; padding: 14px; margin-bottom: 4px;
+}
+.public-toggle-label {
+  display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
+}
+.public-toggle-label input[type=checkbox] { display: none; }
+.ptl-box {
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; margin-top: 2px;
+  background: var(--bg4); border: 2px solid var(--border2);
+  transition: all .15s; position: relative;
+}
+.public-toggle-label input:checked ~ .ptl-box {
+  background: var(--green); border-color: var(--green);
+}
+.public-toggle-label input:checked ~ .ptl-box::after {
+  content: '✓'; position: absolute; top: -1px; left: 2px;
+  color: #fff; font-size: 14px; font-weight: 900;
+}
+.ptl-text { flex: 1; }
+.ptl-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.ptl-sub   { font-size: 12px; color: var(--text3); line-height: 1.5; }
+.ptl-sub b { color: var(--gold); }

@@ -82,7 +82,7 @@ const DB={
     return txt?JSON.parse(txt):null;
   },
   getUser(u){return this.r(`/rest/v1/users?username=eq.${encodeURIComponent(u)}&select=id,username`);},
-  login(u,h){return this.r(`/rest/v1/users?username=eq.${encodeURIComponent(u)}&password_hash=eq.${h}&select=id,username,team_id`);},
+  login(u,h){return this.r(`/rest/v1/users?username=eq.${encodeURIComponent(u)}&password_hash=eq.${h}&select=id,username`);},
   create(u,h){return this.r('/rest/v1/users',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({username:u,password_hash:h})});},
   async getPred(uid){const d=await this.r(`/rest/v1/predictions?user_id=eq.${uid}&select=*`);return d&&d[0];},
   async savePred(uid,payload){
@@ -91,11 +91,11 @@ const DB={
     if(ex&&ex.length)return this.r(`/rest/v1/predictions?user_id=eq.${uid}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body});
     return this.r('/rest/v1/predictions',{method:'POST',headers:{'Prefer':'return=minimal'},body});
   },
-  getTeam(name){return this.r(`/rest/v1/teams?name=eq.${encodeURIComponent(name)}&select=id,name`);},
-  createTeam(name,ownerId){return this.r('/rest/v1/teams',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({name,owner_id:ownerId})});},
-  joinTeam(userId,teamId){return this.r(`/rest/v1/users?id=eq.${userId}`,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({team_id:teamId})});},
-  allUsers(){return this.r('/rest/v1/users?select=id,username,team_id');},
-  allPreds(){return this.r('/rest/v1/predictions?select=user_id,group_rankings,bracket,champion');},
+  // Ekip: predictions tablosundaki team_name alanı üzerinden
+  getTeam(name){return this.r(`/rest/v1/predictions?team_name=eq.${encodeURIComponent(name)}&select=user_id,team_name&limit=1`);},
+  getTeamMembers(name){return this.r(`/rest/v1/predictions?team_name=eq.${encodeURIComponent(name)}&select=user_id,group_rankings,bracket,champion`);},
+  allUsers(){return this.r('/rest/v1/users?select=id,username');},
+  allPreds(){return this.r('/rest/v1/predictions?select=user_id,group_rankings,bracket,champion,team_name,public');},
 };
 
 async function hashPw(p){
@@ -106,7 +106,7 @@ async function hashPw(p){
 // ── STATE ─────────────────────────────────────────────────────
 const S={
   user:null,
-  preds:{group_rankings:{},bracket:{},champion:'',best8:[]},
+  preds:{group_rankings:{},bracket:{},champion:'',best8:[],team_name:'',share_public:true},
   currentStep:0,
   ranking(g){const r=this.preds.group_rankings[g];return(r&&r.length===4)?[...r]:GROUPS[g].teams.map(t=>t.n);},
   setRanking(g,arr){this.preds.group_rankings[g]=arr;},
@@ -266,6 +266,8 @@ async function onLoginSuccess(user){
       S.preds.bracket=p.bracket||{};
       S.preds.champion=p.champion||'';
       S.preds.best8=p.best8||[];
+      S.preds.team_name=p.team_name||'';
+      S.preds.share_public=p.public!==false; // varsayılan true
     }
   }catch(e){console.warn('Tahmin yüklenemedi:',e);}
   document.getElementById('splash-screen').style.display='none';
@@ -277,7 +279,7 @@ async function onLoginSuccess(user){
 
 function doLogout(){
   S.user=null;
-  S.preds={group_rankings:{},bracket:{},champion:'',best8:[]};
+  S.preds={group_rankings:{},bracket:{},champion:'',best8:[],team_name:'',share_public:true};
   S.currentStep=0;
   sessionStorage.removeItem('wc_user');
   document.getElementById('main-app').style.display='none';
@@ -300,7 +302,13 @@ function updateHeader(){
   }
   const ua=document.getElementById('hdr-user-area');
   if(ua&&S.user){
-    ua.innerHTML=`<div class="hdr-chip"><div class="hdr-av">${S.user.username[0].toUpperCase()}</div><span class="hdr-uname">${S.user.username}</span><button class="hdr-out" onclick="doLogout()">Çıkış</button></div>`;
+    const teamLabel=S.preds.team_name?`👥 ${S.preds.team_name}`:'👥 Ekip';
+    ua.innerHTML=`<div class="hdr-chip">
+      <div class="hdr-av">${S.user.username[0].toUpperCase()}</div>
+      <span class="hdr-uname">${S.user.username}</span>
+      <button class="hdr-team-btn" onclick="showTeamModal()" title="Ekip">${teamLabel}</button>
+      <button class="hdr-out" onclick="doLogout()">Çıkış</button>
+    </div>`;
   }
 }
 
@@ -447,6 +455,7 @@ function showFixture(gid){
 // ── ÖZET ──────────────────────────────────────────────────────
 function renderSummary(){
   const mc=document.getElementById('main-content');
+  const isPublic=S.preds.share_public!==false;
   mc.innerHTML=`
     <div class="page">
       <div class="sum-title">📋 Grup Özeti</div>
@@ -463,6 +472,16 @@ function renderSummary(){
             </div>
           </div>`;
         }).join('')}
+      </div>
+      <div class="public-toggle-card">
+        <label class="public-toggle-label">
+          <input type="checkbox" id="public-chk" ${isPublic?'checked':''} onchange="S.preds.share_public=this.checked"/>
+          <span class="ptl-box"></span>
+          <div class="ptl-text">
+            <div class="ptl-title">Genel havuza dahil et</div>
+            <div class="ptl-sub">${S.preds.team_name?`İşaret kaldırılırsa tahmin sadece <b>${S.preds.team_name}</b> ekibinde görünür`:'Ekibe katılmadan genel liderlik tablosunda görünürsün'}</div>
+          </div>
+        </label>
       </div>
       <div class="page-actions">
         <button class="btn-primary btn-next" onclick="stepNav(1)">En İyi 8 Üçüncüyü Seç →</button>
@@ -570,12 +589,15 @@ function pick(rid,mi,team){
 
 // ── EKİP SİSTEMİ ──────────────────────────────────────────────
 function showTeamModal(){
+  const current=S.preds.team_name;
   openModal(`
     <div class="modal-head"><span>👥 Ekip</span><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
+      ${current?`<div class="team-current">Mevcut ekibin: <b>${current}</b></div>`:''}
       <div class="team-opts">
         <button class="team-opt-btn" onclick="showCreateTeam()">➕ Yeni Ekip Oluştur</button>
         <button class="team-opt-btn" onclick="showJoinTeam()">🔗 Ekibe Katıl</button>
+        ${current?`<button class="team-opt-btn team-opt-leave" onclick="doLeaveTeam()">🚪 Ekipten Ayrıl</button>`:''}
       </div>
     </div>`);
 }
@@ -584,7 +606,8 @@ function showCreateTeam(){
   document.getElementById('modal-box').innerHTML=`
     <div class="modal-head"><span>➕ Ekip Oluştur</span><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
-      <div class="sfield"><label>Ekip Adı</label><input class="sinp" id="team-name-inp" placeholder="Ekip adı gir"/></div>
+      <p class="team-hint">Yeni bir ekip adı gir. Aynı adı kullanan herkes aynı ekipte görünür.</p>
+      <div class="sfield"><label>Ekip Adı</label><input class="sinp" id="team-name-inp" placeholder="Örn: Kuzey Yıldızları"/></div>
       <p class="serr" id="team-err"></p>
       <button class="sbtn" onclick="doCreateTeam()">Oluştur →</button>
     </div>`;
@@ -593,17 +616,15 @@ function showCreateTeam(){
 async function doCreateTeam(){
   const name=document.getElementById('team-name-inp').value.trim();
   const err=document.getElementById('team-err');
-  if(!name){err.textContent='Ekip adı gir.';return;}
-  if(name.length<2){err.textContent='En az 2 karakter.';return;}
+  if(!name||name.length<2){err.textContent='En az 2 karakter gir.';return;}
   err.textContent='Kontrol ediliyor...';
   try{
     const ex=await DB.getTeam(name);
-    if(ex&&ex.length){err.textContent='Bu ekip adı alınmış, başka bir ad seç.';return;}
-    const res=await DB.createTeam(name,S.user.id);
-    if(!res||!res.length){err.textContent='Oluşturulamadı.';return;}
-    await DB.joinTeam(S.user.id,res[0].id);
-    S.user.team_id=res[0].id;
-    S.user.team_name=name;
+    if(ex&&ex.length&&ex[0].user_id!==S.user.id){
+      err.textContent='Bu ekip adı alınmış, başka bir ad seç.';return;
+    }
+    S.preds.team_name=name;
+    await saveAll();
     closeModal();
     toast('Ekip oluşturuldu: '+name+' 🎉');
   }catch(e){err.textContent='Hata: '+e.message;}
@@ -613,7 +634,8 @@ function showJoinTeam(){
   document.getElementById('modal-box').innerHTML=`
     <div class="modal-head"><span>🔗 Ekibe Katıl</span><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
-      <div class="sfield"><label>Ekip Adı</label><input class="sinp" id="team-name-inp" placeholder="Katılmak istediğin ekip"/></div>
+      <p class="team-hint">Arkadaşlarının ekip adını gir ve katıl.</p>
+      <div class="sfield"><label>Ekip Adı</label><input class="sinp" id="team-name-inp" placeholder="Ekip adını gir"/></div>
       <p class="serr" id="team-err"></p>
       <button class="sbtn" onclick="doJoinTeam()">Katıl →</button>
     </div>`;
@@ -623,15 +645,17 @@ async function doJoinTeam(){
   const name=document.getElementById('team-name-inp').value.trim();
   const err=document.getElementById('team-err');
   if(!name){err.textContent='Ekip adı gir.';return;}
-  try{
-    const ex=await DB.getTeam(name);
-    if(!ex||!ex.length){err.textContent='Bu isimde ekip bulunamadı.';return;}
-    await DB.joinTeam(S.user.id,ex[0].id);
-    S.user.team_id=ex[0].id;
-    S.user.team_name=name;
-    closeModal();
-    toast('Ekibe katıldın: '+name+' 🎉');
-  }catch(e){err.textContent='Hata: '+e.message;}
+  S.preds.team_name=name;
+  await saveAll();
+  closeModal();
+  toast('Ekibe katıldın: '+name+' 🎉');
+}
+
+async function doLeaveTeam(){
+  S.preds.team_name='';
+  await saveAll();
+  closeModal();
+  toast('Ekipten ayrıldın.');
 }
 
 // ── KAYDET ────────────────────────────────────────────────────
@@ -644,6 +668,8 @@ async function saveAll(){
       bracket:S.preds.bracket,
       champion:S.preds.champion,
       best8:S.preds.best8||[],
+      team_name:S.preds.team_name||null,
+      public:S.preds.share_public,
     });
     toast('Tahminler kaydedildi ✓');
   }catch(e){toast('Hata: '+e.message,'err');}
