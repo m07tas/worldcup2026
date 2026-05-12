@@ -1,5 +1,5 @@
 /* ============================================================
-   FIFA 2026 — script.js v13
+   World Cup 2026 — script.js v13
    ============================================================ */
 
 const LOCK_DATE  = new Date('2026-06-08T00:00:00');
@@ -258,6 +258,8 @@ const S={
 
   buildSteps(){
     const sys=this.session.data.system;
+    // 'both' = ekip kurucusu her iki sistemi de serbest bıraktı
+    // Her kullanıcı kendi istediği sistemi seçer, buildSteps kullanıcının seçimine göre çalışır
     const groupSteps=GRP.map(id=>({type:sys==='ranking'?'group_rank':'group_match',id}));
     this.steps=[
       ...groupSteps,
@@ -420,7 +422,7 @@ function showStartPredict(){
             <div class="mc-icon">👥</div>
             <div class="mc-text">
               <div class="mc-title">${t.name}</div>
-              <div class="mc-sub">Sistem: ${{'ranking':'Grup Sıralaması','match':'Maç Maç','both':'Maç + Sıralama'}[t.pred_system||'ranking']}</div>
+              <div class="mc-sub">Sistem: ${{'ranking':'Grup Sıralaması','match':'Maç Maç','both':'Serbest'}[t.pred_system||'ranking']}</div>
             </div>
             <div class="mc-arr">›</div>
           </button>`).join('')}
@@ -437,6 +439,7 @@ function showStartPredict(){
 }
 
 function showTeamPredSetup(teamId,teamName,teamSystem){
+  const sysLabel={'ranking':'Grup Sıralaması','match':'Maç Maç Kazanan','both':'Serbest (ikisi de)'};
   mc().innerHTML=`
     <div class="page">
       <button class="back-btn" onclick="showStartPredict()">‹ Geri</button>
@@ -447,15 +450,48 @@ function showTeamPredSetup(teamId,teamName,teamSystem){
           <label>Tahmin Adı <small>(isteğe bağlı)</small></label>
           <input class="sinp" id="pred-name" placeholder="${teamName} Tahmini"/>
         </div>
-        <div class="pool-note" style="margin:8px 0">
-          Sistem: <b>${{'ranking':'Grup Sıralaması','match':'Maç Maç Kazanan','both':'Her İkisi'}[teamSystem]}</b>
-          ${teamSystem==='match'||teamSystem==='both'?'<br><small>Grup maçlarını tahmin et → sistem sıralamayı hesaplar</small>':''}
+        ${teamSystem==='both'?`
+        <div class="sfield">
+          <label>Tahmin Sistemi</label>
+          <select class="sinp" id="pred-sys">
+            <option value="ranking">📋 Grup Sıralaması — takımları elle sırala</option>
+            <option value="match">⚽ Maç Maç Kazanan — her maçın galibini seç</option>
+          </select>
         </div>
+        <p class="pool-note">Bu ekipte her üye istediği sistemi seçebilir.</p>`
+        :`<div class="pool-note">Sistem: <b>${sysLabel[teamSystem]}</b></div>`}
       </div>
       <div class="page-actions">
-        <button class="btn-primary btn-next" onclick="startSession('team','${teamId}','${teamSystem}')">Tahmine Başla →</button>
+        <button class="btn-primary btn-next" onclick="startSessionFromTeam('${teamId}','${teamSystem}')">Tahmine Başla →</button>
       </div>
     </div>`;
+}
+
+function startSessionFromTeam(teamId,teamSystem){
+  const predNameEl=document.getElementById('pred-name');
+  const predSysEl=document.getElementById('pred-sys');
+  const predName=predNameEl?predNameEl.value.trim():'';
+  // both ise kullanıcının seçimine bak, yoksa ekip sistemini kullan
+  const actualSystem=predSysEl?predSysEl.value:teamSystem;
+  S.session.type='team';
+  S.session.teamId=teamId;
+  S.session.teamName=S.myTeams.find(t=>t.id===teamId)?.name||'';
+  S.session.predName=predName||S.session.teamName;
+  const existing=S.teamPredsMap[teamId];
+  S.session.data={
+    system:actualSystem,
+    group_rankings:existing?.group_rankings||{},
+    group_matches:existing?.group_matches||{},
+    group_tiebreaks:existing?.group_tiebreaks||{},
+    best8:existing?.best8||[],
+    bracket:existing?.bracket||{},
+    champion:existing?.champion||'',
+    public:false,
+  };
+  S.currentStep=0;
+  S.buildSteps();
+  setMode('predict');
+  renderCurrentStep();
 }
 
 function startSession(type,teamId,system){
@@ -608,27 +644,34 @@ function renderGroupMatches(gid){
   // Eşit puan var mı kontrol et
   let tieSection='';
   if(allPicked){
-    const{tied}=findTiedGroups(gid,mw,[]);
+    const{ranked,tied}=findTiedGroups(gid,mw,[]);
     if(tied.length>0){
       const tb=S.session.data.group_tiebreaks[gid]||[];
+      // Sıralı puan tablosu
+      const ptsTable=ranked.map(r=>`
+        <div class="tie-pts-row">
+          <span>${getFlag(r.n)} ${r.n}</span>
+          <span class="tie-pts-num">${r.pts} puan · ${r.wins} galibiyet</span>
+        </div>`).join('');
       tieSection=`<div class="tie-section">
         <div class="tie-title">⚖️ Eşit Puanlı Takımlar</div>
-        <p class="tie-sub">Aşağıdaki takımlar eşit puanda. Sürükle-bırak ile sırala:</p>
-        ${tied.map((tg,ti)=>`
-          <div class="tie-group" id="tg-${gid}-${ti}">
+        <div class="tie-pts-table">${ptsTable}</div>
+        <p class="tie-sub" style="margin-top:10px">Eşit puanlı takımları sürükle-bırak ile sırala:</p>
+        ${tied.map((tg,ti)=>{
+          // Mevcut tiebreak sırasına göre göster
+          const orderedTg=tb.length>0?[...tg].sort((a,b)=>{const ai=tb.indexOf(a),bi=tb.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi)}):tg;
+          return`<div class="tie-group" id="tg-${gid}-${ti}">
             <div class="tie-group-label">${tg.map(n=>getFlag(n)+' '+n).join(' = ')}</div>
-            ${tg.map((nm,ii)=>{
-              const tbIdx=tb.indexOf(nm);
-              const pos=tbIdx>=0?tbIdx:ii;
-              return`<div class="rank-row pos-${pos+1}" draggable="true" data-idx="${ii}" data-name="${nm}"
-                ondragstart="dsTie(event,'${gid}',${ti},${ii})" ondragover="dov(event)" ondrop="dpTie(event,'${gid}',${ti})" ondragend="de()"
+            ${orderedTg.map((nm,ii)=>`
+              <div class="rank-row pos-${ii+1}" draggable="true" data-idx="${tg.indexOf(nm)}" data-name="${nm}"
+                ondragstart="dsTie(event,'${gid}',${ti},${tg.indexOf(nm)})" ondragover="dov(event)" ondrop="dpTie(event,'${gid}',${ti})" ondragend="de()"
                 ontouchstart="tsTie(event,'${gid}',${ti})" ontouchmove="tm(event)" ontouchend="teTie(event,'${gid}',${ti})" style="touch-action:none">
-                <div class="rr-num">${pos+1}</div>
+                <div class="rr-num">${ii+1}</div>
                 <div class="rr-team"><span class="rr-flag">${getFlag(nm)}</span><div class="rr-info"><div class="rr-name">${nm}</div></div></div>
                 <div class="rr-drag">⠿</div>
-              </div>`;
-            }).join('')}
-          </div>`).join('')}
+              </div>`).join('')}
+          </div>`;
+        }).join('')}
       </div>`;
     }
   }
@@ -674,36 +717,66 @@ function updateGroupPtsPreview(gid,mw){
   el.innerHTML=ranked.map(r=>`<span class="pts-chip">${getFlag(r.n)} ${r.pts}p</span>`).join('');
 }
 
-// Tie drag
-let _tieDg={gid:null,tgIdx:null,idx:null};
-function dsTie(e,gid,tgIdx,idx){_tieDg={gid,tgIdx,idx};e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+// Tie drag — daha temiz implementasyon
+let _tieDrag={gid:null,tgIdx:null,fromIdx:null,fromName:null};
+
+function dsTie(e,gid,tgIdx,idx){
+  const{tied}=findTiedGroups(gid,S.session.data.group_matches[gid]||{},[]);
+  const tg=tied[tgIdx]||[];
+  _tieDrag={gid,tgIdx,fromIdx:idx,fromName:tg[idx]};
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+
 function dpTie(e,gid,tgIdx){
   e.preventDefault();de();
   const t=e.target.closest('.rank-row');if(!t)return;
-  const ti=parseInt(t.dataset.idx);if(_tieDg.idx===ti)return;
+  const toIdx=parseInt(t.dataset.idx);
+  if(_tieDrag.fromIdx===toIdx||_tieDrag.gid!==gid||_tieDrag.tgIdx!==tgIdx)return;
+
   const{tied}=findTiedGroups(gid,S.session.data.group_matches[gid]||{},[]);
-  const tg=tied[tgIdx];if(!tg)return;
-  const cur=[...(S.session.data.group_tiebreaks[gid]||tg)];
-  const fromName=tg[_tieDg.idx];const toName=tg[ti];
-  const fi=cur.indexOf(fromName)<0?_tieDg.idx:cur.indexOf(fromName);
-  const tii=cur.indexOf(toName)<0?ti:cur.indexOf(toName);
-  const tmp=[...cur.length?cur:tg];
-  const[m]=tmp.splice(fi<0?_tieDg.idx:fi,1);tmp.splice(tii<0?ti:tii,0,m);
-  S.setTiebreak(gid,tmp);
+  const tg=tied[tgIdx]||[];
+  // Mevcut sırayı al (tiebreak varsa kullan, yoksa tied group sırası)
+  const cur=S.session.data.group_tiebreaks[gid]
+    ? [...S.session.data.group_tiebreaks[gid]]
+    : [...tg];
+  // from ve to isimlerini bul
+  const fromName=tg[_tieDrag.fromIdx];
+  const toName=tg[toIdx];
+  const fi=cur.indexOf(fromName)<0?_tieDrag.fromIdx:cur.indexOf(fromName);
+  const ti=cur.indexOf(toName)<0?toIdx:cur.indexOf(toName);
+  const [moved]=cur.splice(fi,1);
+  cur.splice(ti,0,moved);
+  S.setTiebreak(gid,cur);
   renderGroupMatches(gid);
 }
-let _tieTr={gid:null,tgIdx:null};
-function tsTie(e,gid,tgIdx){_tr=e.currentTarget;_tieTr={gid,tgIdx};_tr.classList.add('dragging');}
+
+let _tieTouchDrag={gid:null,tgIdx:null,el:null,fromIdx:null};
+function tsTie(e,gid,tgIdx){
+  _tieTouchDrag={gid,tgIdx,el:e.currentTarget,fromIdx:parseInt(e.currentTarget.dataset.idx)};
+  e.currentTarget.classList.add('dragging');
+}
 function teTie(e,gid,tgIdx){
-  if(!_tr)return;
-  const rows=Array.from(_tr.parentNode.querySelectorAll('.rank-row'));
+  if(!_tieTouchDrag.el)return;
+  const rows=Array.from(_tieTouchDrag.el.parentNode.querySelectorAll('.rank-row'));
   const tgt=rows.find(r=>r.classList.contains('drag-over'));
   rows.forEach(r=>r.classList.remove('dragging','drag-over'));
   if(tgt){
-    const fi=parseInt(_tr.dataset.idx),ti=parseInt(tgt.dataset.idx);
-    if(fi!==ti)dpTie({preventDefault:()=>{}},gid,tgIdx);
+    const toIdx=parseInt(tgt.dataset.idx);
+    if(_tieTouchDrag.fromIdx!==toIdx){
+      const{tied}=findTiedGroups(gid,S.session.data.group_matches[gid]||{},[]);
+      const tg=tied[tgIdx]||[];
+      const cur=S.session.data.group_tiebreaks[gid]?[...S.session.data.group_tiebreaks[gid]]:[...tg];
+      const fromName=tg[_tieTouchDrag.fromIdx];
+      const toName=tg[toIdx];
+      const fi=cur.indexOf(fromName)<0?_tieTouchDrag.fromIdx:cur.indexOf(fromName);
+      const ti=cur.indexOf(toName)<0?toIdx:cur.indexOf(toName);
+      const[moved]=cur.splice(fi,1);cur.splice(ti,0,moved);
+      S.setTiebreak(gid,cur);
+    }
   }
-  _tr=null;
+  _tieTouchDrag={gid:null,tgIdx:null,el:null,fromIdx:null};
+  renderGroupMatches(gid);
 }
 
 // ── FİKSTÜR ──────────────────────────────────────────────────
@@ -857,7 +930,7 @@ function showMyPreds(){
       ${Object.keys(S.teamPredsMap).length>0?Object.entries(S.teamPredsMap).map(([tid,tp])=>{
         const team=S.myTeams.find(t=>t.id===tid);
         return`<div class="pred-card">
-          <div class="pred-card-header"><span class="pred-card-title">👥 ${tp.pred_name||team?.name||'Ekip Tahmini'}</span><span class="pred-card-sys">${{'ranking':'Grup Sıralaması','match':'Maç Maç','both':'Karma'}[tp.system||'ranking']}</span></div>
+          <div class="pred-card-header"><span class="pred-card-title">👥 ${tp.pred_name||team?.name||'Ekip Tahmini'}</span><span class="pred-card-sys">${{'ranking':'Grup Sıralaması','match':'Maç Maç','both':'Serbest Sistem'}[tp.system||'ranking']}</span></div>
           ${tp.champion?`<div class="champ-disp">🏆 ${getFlag(tp.champion)} <b>${tp.champion}</b></div>`:''}
           <button class="btn-primary" style="width:100%;margin-top:10px;background:var(--bg3);color:var(--text)" onclick="startSession('team','${tid}','${tp.system||'ranking'}')">✏️ Düzenle</button>
         </div>`;}).join(''):''}
@@ -877,7 +950,7 @@ function showTeamHub(){
             <div class="team-item">
               <div class="ti-info">
                 <div class="ti-name">${t.name}</div>
-                <div class="ti-meta">${{'ranking':'Grup Sıralaması','match':'Maç Maç','both':'Karma'}[t.pred_system||'ranking']} · ${t.max_members>0?'Max '+t.max_members+' üye':'Sınırsız'}</div>
+                <div class="ti-meta">${{'ranking':'Grup Sıralaması','match':'Maç Maç','both':'Serbest Sistem'}[t.pred_system||'ranking']} · ${t.max_members>0?'Max '+t.max_members+' üye':'Sınırsız'}</div>
               </div>
               <div class="ti-actions">
                 <button class="ti-btn" onclick="showTeamDetail('${t.id}','${t.name.replace(/'/g,"\\'")}')">Detay</button>
@@ -949,7 +1022,7 @@ function showCreateTeam(){
             <select class="sinp" id="ct-sys">
               <option value="ranking">Grup Sıralaması — takımları sırala</option>
               <option value="match">Maç Maç Kazanan — her maçın galibini seç</option>
-              <option value="both">Karma — maçları seç + eşitlikleri sırala</option>
+              <option value="both">Serbest — — maçları seç + eşitlikleri sırala</option>
             </select>
           </div>
           <div class="sfield"><label>Maksimum Üye</label>
