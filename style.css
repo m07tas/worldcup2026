@@ -80,7 +80,7 @@ body { background: var(--bg); color: var(--text); }
 /* ── SPLASH ──────────────────────────────────── */
 .splash {
   min-height: 100vh;
-  background: radial-gradient(ellipse at 50% 30%, #0d2010 0%, #060a0e 55%, #04080c 100%);
+  background: radial-gradient(ellipse at 50% 25%, #1a0f00 0%, #0d0a00 45%, #060408 100%);
   display: flex; align-items: center; justify-content: center;
   padding: 0.75rem;
   position: relative; overflow: hidden;
@@ -118,11 +118,12 @@ body { background: var(--bg); color: var(--text); }
 @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
 
 .trophy-img {
-  width: 240px !important;
+  width: 280px !important;
   height: auto !important;
   object-fit: contain;
   filter: drop-shadow(0 0 55px rgba(255,183,0,.95)) drop-shadow(0 0 110px rgba(255,150,0,.55)) !important;
   display: block;
+  mix-blend-mode: screen;
   animation: float 3s ease-in-out infinite, trophy-pulse 2.5s ease-in-out infinite;
 }
 
