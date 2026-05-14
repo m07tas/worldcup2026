@@ -80,9 +80,9 @@ body { background: var(--bg); color: var(--text); }
 /* ── SPLASH ──────────────────────────────────── */
 .splash {
   min-height: 100vh;
-  background: linear-gradient(160deg, #060a14 0%, #0a1a10 40%, #060d08 70%, #080612 100%);
+  background: radial-gradient(ellipse at 50% 30%, #0d2010 0%, #060a0e 55%, #04080c 100%);
   display: flex; align-items: center; justify-content: center;
-  padding: 1rem;
+  padding: 0.75rem;
   position: relative; overflow: hidden;
 }
 .splash-bg { position:absolute; inset:0; pointer-events:none; }
@@ -96,6 +96,7 @@ body { background: var(--bg); color: var(--text); }
   display: flex; flex-direction: column; align-items: center;
   width: 100%; max-width: 400px;
   text-align: center;
+  gap: 0;
 }
 
 /* World Cup pill badge */
@@ -114,25 +115,26 @@ body { background: var(--bg); color: var(--text); }
 }
 
 /* Kupa — büyük ve ortada */
-.splash-trophy {
-  position: relative; z-index: 3;
-  animation: float 3s ease-in-out infinite;
-  margin-bottom: -20px; /* 2026'nın üstüne bindir */
-}
 @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
 
 .trophy-img {
-  width: 220px !important;
+  width: 240px !important;
   height: auto !important;
   object-fit: contain;
-  filter: drop-shadow(0 0 40px rgba(255,183,0,.8)) drop-shadow(0 0 80px rgba(255,183,0,.4)) drop-shadow(0 20px 40px rgba(0,0,0,.6)) !important;
+  filter: drop-shadow(0 0 55px rgba(255,183,0,.95)) drop-shadow(0 0 110px rgba(255,150,0,.55)) !important;
   display: block;
-  animation: trophy-glow 3s ease-in-out infinite;
+  animation: float 3s ease-in-out infinite, trophy-pulse 2.5s ease-in-out infinite;
 }
 
+@keyframes trophy-pulse {
+  0%,100% { filter: drop-shadow(0 0 55px rgba(255,183,0,.95)) drop-shadow(0 0 110px rgba(255,150,0,.55)) !important; }
+  50%      { filter: drop-shadow(0 0 75px rgba(255,220,0,1.0)) drop-shadow(0 0 150px rgba(255,183,0,.75)) !important; }
+}
+
+
 @keyframes trophy-glow {
-  0%, 100% { filter: drop-shadow(0 0 40px rgba(255,183,0,.8)) drop-shadow(0 0 80px rgba(255,183,0,.4)) drop-shadow(0 20px 40px rgba(0,0,0,.6)) !important; }
-  50% { filter: drop-shadow(0 0 60px rgba(255,220,0,1)) drop-shadow(0 0 120px rgba(255,183,0,.6)) drop-shadow(0 20px 40px rgba(0,0,0,.6)) !important; }
+  0%,100% { filter: drop-shadow(0 0 50px rgba(255,183,0,.9)) drop-shadow(0 0 100px rgba(255,150,0,.5)) !important; }
+  50% { filter: drop-shadow(0 0 70px rgba(255,220,0,1.0)) drop-shadow(0 0 140px rgba(255,183,0,.7)) !important; }
 }
 .hdr-logo .trophy-img {
   width: 26px !important;
@@ -143,25 +145,20 @@ body { background: var(--bg); color: var(--text); }
 }
 
 /* 2026 */
-.splash-year {
-  position: relative; z-index: 2;
-  font-size: 80px; font-weight: 900; color: var(--gold);
-  line-height: 1; letter-spacing: -3px;
-  text-shadow: 0 0 50px rgba(255,183,0,.5), 0 4px 20px rgba(0,0,0,.4);
-  margin-bottom: 8px;
-}
-.splash-hosts { font-size: 13px; color: rgba(255,255,255,.75); margin-bottom: 4px; }
-.splash-sub   { font-size: 11px; color: rgba(255,255,255,.45); margin-bottom: 20px; }
+.splash-hosts { font-size: 12px; color: rgba(255,255,255,.65); margin: 8px 0 2px; order: 2; }
+.splash-sub   { font-size: 10px; color: rgba(255,255,255,.35); margin-bottom: 10px; order: 3; }
 
 .splash-card {
   background: var(--card-bg);
   border: 1px solid var(--card-bd);
   border-radius: 16px;
-  padding: 20px;
+  padding: 18px;
   width: 100%;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: var(--shadow);
+  order: 4;
+  margin-top: 0;
 }
 
 .splash-tabs {
@@ -208,7 +205,7 @@ body { background: var(--bg); color: var(--text); }
 .sbtn:hover  { background: var(--green-dk); }
 .sbtn:active { transform: scale(.98); }
 
-.splash-note { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 14px; }
+.splash-note { font-size: 10px; color: rgba(255,255,255,.3); margin-top: 10px; order: 5; }
 
 /* ── HEADER ──────────────────────────────────── */
 .header {
@@ -551,9 +548,7 @@ body { background: var(--bg); color: var(--text); }
 
 /* ── DESKTOP ─────────────────────────────────── */
 @media (min-width: 600px) {
-  .splash-year { font-size: 88px; }
-  .splash-trophy { font-size: 80px; }
-  .header-inner  { height: 60px; padding: 0 20px; }
+      .header-inner  { height: 60px; padding: 0 20px; }
   .hdr-title     { font-size: 17px; }
   #step-bar      { padding: 12px 20px 10px; }
   .page          { padding: 20px; }
@@ -641,24 +636,7 @@ body { background: var(--bg); color: var(--text); }
 .b8-row.b8-sel .b8-check { opacity: 1; }
 
 /* ── KUPA GÖRSELİ ────────────────────────────── */
-.trophy-img {
-  width: 100px;
-  height: 130px;
-  object-fit: contain;
-  object-position: center;
-  background: transparent;
-  mix-blend-mode: normal;
-  filter: drop-shadow(0 4px 24px rgba(255,183,0,0.55));
-  animation: float 3s ease-in-out infinite;
-  display: block;
-}
-.hdr-logo .trophy-img {
-  width: 26px;
-  height: 34px;
-  animation: none;
-  filter: drop-shadow(0 0 5px rgba(255,183,0,0.5));
-  vertical-align: middle;
-}
+
 
 /* ── EKİP MODAL ──────────────────────────────── */
 .team-opts { display: flex; flex-direction: column; gap: 10px; }
@@ -893,34 +871,29 @@ body { background: var(--bg); color: var(--text); }
 
 /* Aydınlık tema iyileştirme */
 [data-theme="light"] .splash {
-  background: linear-gradient(160deg, #003d1a 0%, #005028 50%, #002010 100%);
+  background: radial-gradient(ellipse at 50% 30%, #003d1a 0%, #001a0d 55%, #000d06 100%);
 }
-[data-theme="light"] .splash-year { text-shadow: 0 0 40px rgba(255,183,0,.6); }
-[data-theme="light"] .rank-table { box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+[data-theme="light"] [data-theme="light"] .rank-table { box-shadow: 0 2px 12px rgba(0,0,0,.08); }
 [data-theme="light"] .menu-card { box-shadow: 0 1px 6px rgba(0,0,0,.06); }
 [data-theme="light"] .match-card { box-shadow: 0 1px 6px rgba(0,0,0,.06); }
 
 /* Splash iyileştirme — kupa büyük, alt tarafa */
 .splash-content { gap: 0; }
-.splash-trophy {
-  order: 2;
-  margin-top: 8px;
-  margin-bottom: 0;
+.splash-trophy .splash-hosts { font-size: 12px; color: rgba(255,255,255,.65); margin: 8px 0 2px; order: 2; }
+.splash-sub   { font-size: 10px; color: rgba(255,255,255,.35); margin-bottom: 10px; order: 3; }
+.splash-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-bd);
+  border-radius: 16px;
+  padding: 18px;
+  width: 100%;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow);
+  order: 4;
+  margin-top: 0;
 }
-.splash-trophy .trophy-img {
-  width: 220px !important;
-  height: auto !important;
-}
-.splash-title {
-  order: 1;
-  font-size: 28px !important;
-  font-weight: 900 !important;
-}
-.splash-year { order: 3; margin-top: -8px; }
-.splash-hosts { order: 4; margin-top: 4px; }
-.splash-sub   { order: 5; }
-.splash-card  { order: 6; margin-top: 16px; }
-.splash-note  { order: 7; }
+.splash-note { font-size: 10px; color: rgba(255,255,255,.3); margin-top: 10px; order: 5; }
 
 /* Eşitlik puan tablosu */
 .tie-pts-table { background:var(--bg3);border-radius:8px;padding:8px 12px;margin-bottom:4px; }
@@ -949,18 +922,15 @@ body { background: var(--bg); color: var(--text); }
 }
 .gmc-draw.selected::after { content: ''; display:block; }
 
-/* ── SPLASH ORDER OVERRIDE TEMİZLE ───────────── */
+/* ── SPLASH ORDER OVERRIDE TEMİZLE ─────────────── */
 .splash-content { gap: 0 !important; }
-.splash-wc-badge { order: 1 !important; }
-.splash-trophy   { order: 2 !important; margin-bottom: -20px !important; }
-.splash-year     { order: 3 !important; margin-top: 0 !important; }
-.splash-hosts    { order: 4 !important; margin-top: 8px; }
-.splash-sub      { order: 5 !important; }
-.splash-card     { order: 6 !important; margin-top: 18px; }
-.splash-note     { order: 7 !important; }
+.splash-trophy   { order: 1 !important; margin: 0 !important; }
+.splash-hosts { font-size: 12px; color: rgba(255,255,255,.65); margin: 8px 0 2px; order: 2; }
+.splash-sub   { font-size: 10px; color: rgba(255,255,255,.35); margin-bottom: 10px; order: 3; }
+.splash-card     { order: 4 !important; margin-top: 12px !important; }
+.splash-note { font-size: 10px; color: rgba(255,255,255,.3); margin-top: 10px; order: 5; }
 
 /* Eski .splash-title artık yok, sadece badge */
-.splash-title { display: none !important; }
 
 /* ── UI İYİLEŞTİRMELERİ ─────────────────────── */
 /* Step bar daha belirgin */
@@ -982,3 +952,12 @@ body { background: var(--bg); color: var(--text); }
 /* Best8 kartları */
 .b8-row { transition: transform .1s, background .12s; }
 .b8-row:active { transform: scale(.98); }
+
+/* ── MOBİL YÜKSEKLİK UYUMU ──────────────── */
+@media (max-height: 700px) {
+  .trophy-img { width: 180px !important; }
+}
+@media (max-height: 600px) {
+  .trophy-img { width: 150px !important; }
+  .splash-card { padding: 14px; }
+}
