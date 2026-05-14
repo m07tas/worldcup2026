@@ -649,7 +649,7 @@ function renderGroupMatches(gid){
       tieSection=`<div class="tie-section">
         <div class="tie-title">⚖️ Eşit Puanlı Takımlar</div>
         <div class="tie-pts-table">${ptsTable}</div>
-        <p class="tie-sub" style="margin-top:10px">Eşit puanlı takımları sürükle-bırak ile sırala:</p>
+        <p class="tie-sub" style="margin-top:10px">⬇️ Eşit takımları sürükle-bırak ile sırala <span style="color:var(--text3);font-size:11px">(opsiyonel — atlayabilirsin)</span>:</p>
         ${tied.map((tg,ti)=>{
           // Mevcut tiebreak sırasına göre göster
           const orderedTg=tb.length>0?[...tg].sort((a,b)=>{const ai=tb.indexOf(a),bi=tb.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi)}):tg;
@@ -691,7 +691,7 @@ function renderGroupMatches(gid){
       <div class="page-actions">
         ${allPicked
           ?`<button class="btn-primary btn-next" onclick="stepNav(1)">${isLast?'Özete Git →':'Grup '+GRP[gIdx+1]+' →'}</button>`
-          :`<p class="pick-warn">⚠️ ${6-Object.keys(mw).length} maç kaldı</p>`}
+          :`<div style="display:flex;flex-direction:column;gap:8px"><p class="pick-warn">⚠️ ${6-Object.keys(mw).length} maç kaldı</p><button class="btn-primary btn-next" onclick="stepNav(1)" style="opacity:.5;filter:grayscale(.5)">${isLast?'Yine de İlerle →':'Yine de İlerle →'}</button></div>`}
       </div>
     </div>`;
   updateGroupPtsPreview(gid,mw);
