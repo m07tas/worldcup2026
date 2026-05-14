@@ -213,16 +213,9 @@ const S={
       if(!r||r.length<4)return false;
       return r.some((t,i)=>t!==GROUPS[gid].t[i].n);
     }
-    // match: 6 maçın hepsi seçilmiş mi?
+    // match sistemi: 6 maçın hepsi seçilmiş mi? Tiebreak zorunlu değil.
     const mw=d.group_matches[gid]||{};
-    if(Object.keys(mw).length<6)return false;
-    // Tiebreak gerekiyor mu?
-    const {tied}=findTiedGroups(gid,mw,d.group_tiebreaks[gid]||[]);
-    if(tied.length>0){
-      const tb=d.group_tiebreaks[gid]||[];
-      return tied.every(tg=>tg.every(t=>tb.includes(t)));
-    }
-    return true;
+    return Object.keys(mw).length>=6;
   },
   doneCount(){return GRP.filter(g=>this.isGroupDone(g)).length;},
 
@@ -887,11 +880,14 @@ function autoSave(){clearTimeout(_autoTimer);_autoTimer=setTimeout(async()=>{if(
 
 async function persistSave(){
   const d=S.session.data;
+  // group_rankings hesapla (maç sisteminde maçlardan türet)
+  const allRankings={};
+  GRP.forEach(g=>{allRankings[g]=S.getGroupRanking(g);});
   if(S.session.type==='general'){
     await DB.saveGeneralPred(S.user.id,{group_rankings:d.group_rankings,bracket:d.bracket,champion:d.champion,best8:d.best8,public:d.public});
     S.generalPred={...d};
   } else {
-    await DB.saveTeamPred(S.user.id,S.session.teamId,{pred_name:S.session.predName||S.session.teamName,system:d.system,group_rankings:d.system==='ranking'?d.group_rankings:S.getGroupRankingAll(),group_matches:d.group_matches,group_tiebreaks:d.group_tiebreaks,bracket:d.bracket,champion:d.champion,best8:d.best8});
+    await DB.saveTeamPred(S.user.id,S.session.teamId,{pred_name:S.session.predName||S.session.teamName,system:d.system,group_rankings:allRankings,group_matches:d.group_matches,group_tiebreaks:d.group_tiebreaks,bracket:d.bracket,champion:d.champion,best8:d.best8});
     S.teamPredsMap[S.session.teamId]={...d};
   }
 }

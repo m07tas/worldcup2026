@@ -76,47 +76,78 @@ input,select{font-family:inherit}
 
 body { background: var(--bg); color: var(--text); }
 
+
 /* ── SPLASH ──────────────────────────────────── */
 .splash {
   min-height: 100vh;
   background:
-    linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,10,3,0.80) 60%, rgba(0,15,5,0.92) 100%),
-    url('arda.jpg') center center / cover no-repeat;
+    linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,8,2,0.78) 55%, rgba(0,12,4,0.94) 100%),
+    url('arda.jpg') center 30% / cover no-repeat;
   display: flex; align-items: center; justify-content: center;
   padding: 1rem;
   position: relative; overflow: hidden;
 }
 .splash-bg { position:absolute; inset:0; pointer-events:none; }
-.splash-orb {
-  position: absolute; border-radius: 50%;
-  filter: blur(60px); opacity: .8;
-}
-.splash-orb-1 { width:300px;height:300px; background:var(--orb1); top:-80px;  left:-60px; }
-.splash-orb-2 { width:250px;height:250px; background:var(--orb2); bottom:-40px; right:-40px; }
-.splash-orb-3 { width:180px;height:180px; background:var(--orb3); top:40%;   left:60%; }
+.splash-orb { position:absolute;border-radius:50%;filter:blur(60px);opacity:.8; }
+.splash-orb-1 { width:300px;height:300px;background:var(--orb1);top:-80px;left:-60px; }
+.splash-orb-2 { width:250px;height:250px;background:var(--orb2);bottom:-40px;right:-40px; }
+.splash-orb-3 { width:180px;height:180px;background:var(--orb3);top:40%;left:60%; }
 
 .splash-content {
   position: relative; z-index: 1;
   display: flex; flex-direction: column; align-items: center;
-  width: 100%; max-width: 420px;
+  width: 100%; max-width: 400px;
   text-align: center;
 }
 
-.splash-trophy { font-size: 64px; margin-bottom: 8px; animation: float 3s ease-in-out infinite; }
-@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+/* World Cup pill badge */
+.splash-wc-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.12);
+  border: 1.5px solid rgba(255,255,255,.25);
+  border-radius: 50px;
+  padding: 7px 20px;
+  font-size: 18px; font-weight: 900; color: #fff;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  margin-bottom: -30px; /* kupa üstüne bindir */
+  position: relative; z-index: 2;
+}
 
-.splash-title {
-  font-size: 26px; font-weight: 800; color: #fff;
-  letter-spacing: -0.5px; line-height: 1.1;
+/* Kupa — büyük ve ortada */
+.splash-trophy {
+  position: relative; z-index: 3;
+  animation: float 3s ease-in-out infinite;
+  margin-bottom: -20px; /* 2026'nın üstüne bindir */
 }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+
+.trophy-img {
+  width: 140px !important;
+  height: 185px !important;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 30px rgba(255,183,0,.65)) drop-shadow(0 0 60px rgba(255,183,0,.25)) !important;
+  display: block;
+}
+.hdr-logo .trophy-img {
+  width: 26px !important;
+  height: 34px !important;
+  animation: none;
+  filter: drop-shadow(0 0 5px rgba(255,183,0,.5)) !important;
+  vertical-align: middle;
+}
+
+/* 2026 */
 .splash-year {
-  font-size: 72px; font-weight: 900; color: var(--gold);
-  line-height: 1; letter-spacing: -2px;
-  text-shadow: 0 0 40px rgba(255,183,0,.4);
-  margin: -4px 0 4px;
+  position: relative; z-index: 2;
+  font-size: 80px; font-weight: 900; color: var(--gold);
+  line-height: 1; letter-spacing: -3px;
+  text-shadow: 0 0 50px rgba(255,183,0,.5), 0 4px 20px rgba(0,0,0,.4);
+  margin-bottom: 8px;
 }
-.splash-hosts { font-size: 13px; color: rgba(255,255,255,.7); margin-bottom: 4px; }
-.splash-sub   { font-size: 12px; color: rgba(255,255,255,.5); margin-bottom: 24px; }
+.splash-hosts { font-size: 13px; color: rgba(255,255,255,.75); margin-bottom: 4px; }
+.splash-sub   { font-size: 11px; color: rgba(255,255,255,.45); margin-bottom: 20px; }
 
 .splash-card {
   background: var(--card-bg);
@@ -895,3 +926,58 @@ body { background: var(--bg); color: var(--text); }
 .tie-pts-row { display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:13px; }
 .tie-pts-row:not(:last-child) { border-bottom:1px solid var(--border); }
 .tie-pts-num { font-size:12px;font-weight:700;color:var(--gold); }
+
+/* ── BERABERLİK BUTONU ───────────────────────── */
+.gmc-draw {
+  background: var(--bg3) !important;
+  border-left: 1px solid var(--border2) !important;
+  border-right: 1px solid var(--border2) !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  color: var(--text2) !important;
+  letter-spacing: 0.5px;
+  min-width: 44px;
+  transition: all .15s !important;
+}
+.gmc-draw:hover { background: var(--bg4) !important; color: var(--text) !important; }
+.gmc-draw.selected {
+  background: var(--gold-bg) !important;
+  color: var(--gold) !important;
+  border-color: var(--gold-bd) !important;
+  font-size: 11px !important;
+}
+.gmc-draw.selected::after { content: ''; display:block; }
+
+/* ── SPLASH ORDER OVERRIDE TEMİZLE ───────────── */
+.splash-content { gap: 0 !important; }
+.splash-wc-badge { order: 1 !important; }
+.splash-trophy   { order: 2 !important; margin-bottom: -20px !important; }
+.splash-year     { order: 3 !important; margin-top: 0 !important; }
+.splash-hosts    { order: 4 !important; margin-top: 8px; }
+.splash-sub      { order: 5 !important; }
+.splash-card     { order: 6 !important; margin-top: 18px; }
+.splash-note     { order: 7 !important; }
+
+/* Eski .splash-title artık yok, sadece badge */
+.splash-title { display: none !important; }
+
+/* ── UI İYİLEŞTİRMELERİ ─────────────────────── */
+/* Step bar daha belirgin */
+#step-bar { box-shadow: 0 2px 12px rgba(0,0,0,.3); }
+
+/* Maç kartları daha büyük dokunma alanı */
+.gmc-team { padding: 14px 10px !important; min-height: 56px; }
+
+/* Rank row hover iyileştirmesi */
+.rank-row:hover:not(.dragging) { background: var(--bg3); }
+
+/* Düğme active state */
+.btn-primary:active { transform: scale(.97) !important; }
+.sbtn:active { transform: scale(.97) !important; }
+
+/* Match card daha temiz */
+.match-card { border-radius: 14px !important; }
+
+/* Best8 kartları */
+.b8-row { transition: transform .1s, background .12s; }
+.b8-row:active { transform: scale(.98); }
