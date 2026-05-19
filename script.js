@@ -969,72 +969,179 @@ function renderSummary(){
 
 // ── EN İYİ 8 ──────────────────────────────────────────────────
 function renderBest8(){
-  const thirds=S.allThirds();const sel=S.session.data.best8;const locked=IS_LOCKED;
+  const thirds=S.allThirds();
+  const sel=S.session.data.best8;
+  const locked=IS_LOCKED;
   mc().innerHTML=`
     <div class="page">
       <div class="best8-header">
         <div class="best8-title">🥉 En İyi 8 Üçüncü</div>
         <div class="best8-sub">Son 32'ye 8 üçüncü dahil olur. Hangilerinin geçeceğini tahmin et.</div>
       </div>
-      <div class="best8-counter"><div class="b8c-bar"><div class="b8c-fill" style="width:${Math.round(sel.length/8*100)}%"></div></div>
-        <span class="b8c-txt"><b>${sel.length}</b>/8 seçildi</span>
+      <div class="best8-counter">
+        <div class="b8c-bar"><div class="b8c-fill" id="b8-fill" style="width:${Math.round(sel.length/8*100)}%"></div></div>
+        <span class="b8c-txt" id="b8-txt"><b>${sel.length}</b>/8 seçildi</span>
       </div>
       ${locked?`<div class="locked-banner">🔒 Kilitlendi.</div>`:''}
-      <div class="best8-list">
-        ${thirds.map(t=>`<div class="b8-row${sel.includes(t.name)?' b8-sel':''}" ${!locked?`onclick="toggleBest8('${t.name.replace(/'/g,"\\'")}')"`:''}">
-          <div class="b8-left"><span class="b8-flag">${t.flag}</span><div class="b8-info"><div class="b8-name">${t.name}</div><div class="b8-group">Grup ${t.gid} · 3. sıra</div></div></div>
-          <div class="b8-check">${sel.includes(t.name)?'✓':''}</div>
-        </div>`).join('')}
+      <div class="best8-list" id="best8-list">
+        ${thirds.map(t=>best8RowHtml(t,sel,locked)).join('')}
       </div>
-      <div class="page-actions">
-        ${sel.length===8||locked?`<button class="btn-primary btn-next" onclick="stepNav(1)">Son 32'ye Geç →</button>`:`<p class="pick-warn">⚠️ ${8-sel.length} takım daha seç</p>`}
+      <div class="page-actions" id="best8-next">
+        ${best8NextHtml(sel,locked)}
       </div>
     </div>`;
 }
-function toggleBest8(n){if(IS_LOCKED)return;if(!S.toggleBest8(n)){toast('Zaten 8 seçildi!','err');return;}renderBest8();}
+
+function best8RowHtml(t,sel,locked){
+  const on=sel.includes(t.name);
+  return`<div class="b8-row${on?' b8-sel':''}" id="b8r-${t.name.replace(/[^a-zA-Z]/g,'_')}"
+    ${!locked?`onclick="toggleBest8('${t.name.replace(/'/g,"\\'")}')"`:''}>
+    <div class="b8-left">
+      <span class="b8-flag">${t.flag}</span>
+      <div class="b8-info">
+        <div class="b8-name">${t.name}</div>
+        <div class="b8-group">Grup ${t.gid} · 3. sıra</div>
+      </div>
+    </div>
+    <div class="b8-check">${on?'✓':''}</div>
+  </div>`;
+}
+
+function best8NextHtml(sel,locked){
+  if(locked||sel.length===8) return`<button class="btn-primary btn-next" onclick="stepNav(1)">Son 32'ye Geç →</button>`;
+  return`<p class="pick-warn">⚠️ ${8-sel.length} takım daha seç</p>`;
+}
+
+function toggleBest8(n){
+  if(IS_LOCKED)return;
+  const ok=S.toggleBest8(n);
+  if(!ok){toast('Zaten 8 seçildi!','err');return;}
+  const sel=S.session.data.best8;
+  const t=S.allThirds().find(x=>x.name===n);
+  if(!t)return;
+  // In-place: sadece o satırı güncelle
+  const safeId='b8r-'+n.replace(/[^a-zA-Z]/g,'_');
+  const row=document.getElementById(safeId);
+  if(row){
+    const on=sel.includes(n);
+    row.classList.toggle('b8-sel',on);
+    row.querySelector('.b8-check').textContent=on?'✓':'';
+  }
+  // Sayaç
+  const fill=document.getElementById('b8-fill');
+  const txt=document.getElementById('b8-txt');
+  if(fill) fill.style.width=`${Math.round(sel.length/8*100)}%`;
+  if(txt)  txt.innerHTML=`<b>${sel.length}</b>/8 seçildi`;
+  // Buton
+  const next=document.getElementById('best8-next');
+  if(next) next.innerHTML=best8NextHtml(sel,false);
+  autoSave();
+}
 
 // ── ELİMİNASYON ───────────────────────────────────────────────
 function renderElim(rid,label,n){
   const locked=IS_LOCKED;
-  const matches=Array.from({length:n},(_,i)=>{const[t1,t2]=S.matchTeams(rid,i);return{i,t1,t2,w:S.winner(rid,i)};});
+  const matches=Array.from({length:n},(_,i)=>{
+    const[t1,t2]=S.matchTeams(rid,i);
+    return{i,t1,t2,w:S.winner(rid,i)};
+  });
   const allDone=matches.every(m=>m.w);
   const isLast=S.currentStep===S.steps.length-1;
+
+  // Turnuva ağacı mı, liste mi?
+  const useTree=(rid==='r16'||rid==='qf'||rid==='sf'||rid==='final');
+
   mc().innerHTML=`
-    <div class="page">
-      <div class="elim-title">${label}</div>
-      <div class="elim-sub">${n} maç · ${rid==='final'?'Şampiyonu belirle':'Kazananı seçmek için tıkla'}</div>
+    <div class="page elim-page">
+      <div class="elim-header">
+        <div class="elim-title">${label.toUpperCase()}</div>
+        <div class="elim-sub">${n} maç · ${rid==='final'?'Şampiyonu belirle':'Kazananı seçmek için tıkla'}</div>
+      </div>
       ${locked?`<div class="locked-banner">🔒 Kilitlendi.</div>`:''}
-      <div class="matches-list">${matches.map(m=>matchHtml(m,rid,locked)).join('')}</div>
-      <div class="page-actions">
-        ${allDone||locked
-          ? isLast?`<div class="final-save-card">
-              <div class="fsc-title">🏆 Tahminleri Kaydet</div>
-              ${S.session.data.champion?`<div class="fsc-champ">Şampiyon: ${getFlag(S.session.data.champion)} <b>${S.session.data.champion}</b></div>`:''}
-              ${S.session.type==='general'?`<label class="pool-toggle-row" style="margin:14px 0">
-                <input type="checkbox" id="pub-chk" checked onchange="S.session.data.public=this.checked"/>
-                <span class="ptl-box"></span>
-                <div class="ptl-text"><div class="ptl-title">Genel havuza gönder</div><div class="ptl-sub">Herkese açık tabloya ekle</div></div>
-              </label>`:''}
-              <button class="sbtn" onclick="doFinalSave()">💾 Tahminleri Kaydet</button>
-            </div>`
-          : `<button class="btn-primary btn-next" onclick="stepNav(1)">Sonraki Tur →</button>`
-          : `<p class="pick-warn">⚠️ Tüm kazananları seç</p>`}
+      <div class="${useTree?'bracket-grid':'matches-list'}" id="elim-matches-${rid}">
+        ${matches.map(m=>matchCardHtml(m,rid,locked)).join('')}
+      </div>
+      <div id="elim-next-${rid}" class="page-actions">
+        ${elimNextHtml(allDone,locked,isLast,rid)}
       </div>
     </div>`;
 }
 
-function matchHtml(m,rid,locked){
-  const t1=m.t1||{n:'TBD',f:'❓',tbd:true},t2=m.t2||{n:'TBD',f:'❓',tbd:true};
-  const tm=(t,isW)=>`<div class="match-team${isW?' winner':''}${t.tbd?' tbd':''}${locked?' no-pick':''}"
-    ${!t.tbd&&!locked?`onclick="pick('${rid}',${m.i},'${t.n.replace(/'/g,"\\'")}')"`:''}">
-    <span class="mt-flag">${t.f}</span><span class="mt-name">${t.n}</span>${isW?'<span class="mt-check">✓</span>':''}
-  </div>`;
-  return`<div class="match-card${m.w?' won':''}">
-    <div class="match-num">Maç ${m.i+1}${rid==='final'?' · 🏆 Şampiyonu Belirle':''}</div>
-    <div class="match-teams">${tm(t1,m.w===t1.n)}<div class="match-vs">VS</div>${tm(t2,m.w===t2.n)}</div>
+function matchCardHtml(m,rid,locked){
+  const t1=m.t1||{n:'TBD',f:'❓',tbd:true};
+  const t2=m.t2||{n:'TBD',f:'❓',tbd:true};
+  const w=m.w;
+  const isFinal=rid==='final';
+
+  const teamRow=(t,side)=>{
+    const isW=w===t.n;
+    const isLoser=w&&!isW;
+    const clickable=!t.tbd&&!locked;
+    return`<button
+      class="elim-team${isW?' elim-winner':''}${isLoser?' elim-loser':''}${t.tbd?' elim-tbd':''}"
+      data-side="${side}"
+      ${clickable?`onclick="pickElim('${rid}',${m.i},'${t.n.replace(/'/g,"\\'")}')"`:'disabled'}>
+      <span class="elim-flag">${t.f}</span>
+      <span class="elim-name">${t.n}</span>
+      ${isW?'<span class="elim-check">✓</span>':''}
+    </button>`;
+  };
+
+  return`<div class="elim-card${w?' elim-card-done':''}${isFinal?' elim-card-final':''}" id="ecard-${rid}-${m.i}" data-match="${m.i}">
+    <div class="elim-card-label">Maç ${m.i+1}${isFinal?' · 🏆':''}</div>
+    <div class="elim-card-body">
+      ${teamRow(t1,'home')}
+      <div class="elim-divider"></div>
+      ${teamRow(t2,'away')}
+    </div>
   </div>`;
 }
-function pick(rid,mi,team){if(IS_LOCKED)return;S.setWinner(rid,mi,team);if(rid==='final')toast('🏆 '+team+' '+getFlag(team),'ok');renderElim(S.steps[S.currentStep].id,S.steps[S.currentStep].label,S.steps[S.currentStep].n);}
+
+function elimNextHtml(allDone,locked,isLast,rid){
+  if(!allDone&&!locked) return`<p class="pick-warn">⚠️ Tüm kazananları seç</p>`;
+  if(isLast) return`<div class="final-save-card">
+    <div class="fsc-title">🏆 Tahminleri Kaydet</div>
+    ${S.session.data.champion?`<div class="fsc-champ">Şampiyon: ${getFlag(S.session.data.champion)} <b>${S.session.data.champion}</b></div>`:''}
+    ${S.session.type==='general'?`<label class="pool-toggle-row" style="margin:14px 0">
+      <input type="checkbox" id="pub-chk" checked onchange="S.session.data.public=this.checked"/>
+      <span class="ptl-box"></span>
+      <div class="ptl-text"><div class="ptl-title">Genel havuza gönder</div><div class="ptl-sub">Herkese açık tabloya ekle</div></div>
+    </label>`:''}
+    <button class="sbtn" onclick="doFinalSave()">💾 Tahminleri Kaydet</button>
+  </div>`;
+  return`<button class="btn-primary btn-next" onclick="stepNav(1)">Sonraki Tur →</button>`;
+}
+
+function pickElim(rid,mi,team){
+  if(IS_LOCKED)return;
+  S.setWinner(rid,mi,team);
+  if(rid==='final') toast('🏆 '+team+' '+getFlag(team),'ok');
+  autoSave();
+
+  // In-place: sadece o kartı güncelle
+  const card=document.getElementById(`ecard-${rid}-${mi}`);
+  if(card){
+    const locked=IS_LOCKED;
+    const[t1,t2]=S.matchTeams(rid,mi);
+    const newHtml=matchCardHtml({i:mi,t1,t2,w:team},rid,locked);
+    const tmp=document.createElement('div');
+    tmp.innerHTML=newHtml;
+    card.replaceWith(tmp.firstElementChild);
+  }
+
+  // İleri butonu güncelle
+  const step=S.steps[S.currentStep];
+  const n=step.n;
+  const matches=Array.from({length:n},(_,i)=>S.winner(rid,i));
+  const allDone=matches.every(Boolean);
+  const isLast=S.currentStep===S.steps.length-1;
+  const nextEl=document.getElementById(`elim-next-${rid}`);
+  if(nextEl) nextEl.innerHTML=elimNextHtml(allDone,false,isLast,rid);
+}
+
+// Eski pick fonksiyon ismi — geriye dönük uyumluluk için
+function pick(rid,mi,team){ pickElim(rid,mi,team); }
+
 
 // ── KAYDET ────────────────────────────────────────────────────
 let _autoTimer=null;
