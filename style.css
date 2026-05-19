@@ -942,15 +942,15 @@ select.sinp option {
 .stag.third { background: var(--gold-bg);  color: var(--gold);  border: 1px solid var(--gold-bd); }
 
 /* ══════════════════════════════════════════════════
-   ELİMİNASYON
+   ELİMİNASYON — TURNUVA AĞACI
    ══════════════════════════════════════════════════ */
-.elim-page { max-width: 800px; }
+.elim-page { max-width: 900px; }
 .elim-header { margin-bottom: 16px; }
 .elim-title {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 30px; letter-spacing: 2px; color: var(--text);
 }
-.elim-sub { font-size: 12px; color: var(--text3); margin-top: 2px; font-weight: 600; }
+.elim-sub { font-size: 12px; color: var(--text3); margin-top: 2px; font-weight: 600; margin-bottom: 2px; }
 .locked-banner {
   background: var(--gold-bg); border: 1px solid var(--gold-bd);
   border-radius: var(--r-sm); padding: 12px 16px;
@@ -958,126 +958,148 @@ select.sinp option {
   font-weight: 700;
 }
 
-/* Liste görünüm (Son 32 — 16 maç) */
-.matches-list {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-@media (max-width: 600px) {
-  .matches-list { grid-template-columns: 1fr; }
-}
+/* ── Bracket kapsayıcı ── */
+.bracket-wrap { width: 100%; overflow-x: auto; padding-bottom: 8px; }
 
-/* Bracket görünüm (Son 16, Çeyrek, Yarı) */
-.bracket-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-@media (max-width: 500px) {
-  .bracket-grid { grid-template-columns: 1fr; }
-}
-
-/* ── Maç kartı ── */
+/* ── Maç Kartı (ortak) ── */
 .elim-card {
   background: var(--bg2);
   border: 1.5px solid var(--border);
   border-radius: var(--r);
   overflow: hidden;
-  transition: border-color .18s, box-shadow .18s;
+  transition: border-color .18s;
+  min-width: 160px;
+  width: 100%;
 }
 .elim-card:hover { border-color: var(--border2); }
-.elim-card.elim-card-done {
-  border-color: var(--green-bd);
-}
+.elim-card.elim-card-done { border-color: var(--green-bd); }
 .elim-card.elim-card-final {
   border-color: var(--gold-bd);
-  box-shadow: 0 0 0 2px rgba(245,197,24,.15);
+  box-shadow: 0 0 0 3px rgba(245,197,24,.18), var(--shadow);
 }
 
 .elim-card-label {
-  padding: 7px 14px;
+  padding: 6px 12px;
   background: var(--bg3);
   border-bottom: 1px solid var(--border);
   font-size: 10px; font-weight: 800;
   color: var(--text3); text-transform: uppercase; letter-spacing: .6px;
 }
-.elim-card.elim-card-done .elim-card-label { color: var(--green); }
-.elim-card.elim-card-final .elim-card-label { color: var(--gold); }
+.elim-card.elim-card-done .elim-card-label { color: var(--green); background: rgba(0,224,112,.07); }
+.elim-card.elim-card-final .elim-card-label { color: var(--gold); background: rgba(245,197,24,.10); font-size: 12px; text-align: center; padding: 8px 12px; }
 
-.elim-card-body {
-  display: flex;
-  flex-direction: column;
-}
-
-.elim-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 0 14px;
-}
+.elim-card-body { display: flex; flex-direction: column; }
+.elim-divider { height: 1px; background: var(--border); margin: 0 12px; }
 
 /* Takım butonu */
 .elim-team {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 13px 14px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
-  width: 100%;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  background: transparent; border: none;
+  cursor: pointer; font-family: inherit;
+  text-align: left; width: 100%;
   transition: background .14s;
-  position: relative;
-  min-height: 52px;
+  min-height: 44px;
 }
-.elim-team:hover:not([disabled]):not(.elim-tbd) {
-  background: rgba(255,255,255,.05);
-}
-[data-theme="light"] .elim-team:hover:not([disabled]):not(.elim-tbd) {
-  background: var(--bg3);
-}
+.elim-team:hover:not([disabled]):not(.elim-tbd) { background: rgba(255,255,255,.05); }
+[data-theme="light"] .elim-team:hover:not([disabled]):not(.elim-tbd) { background: var(--bg3); }
 .elim-team[disabled] { cursor: default; }
-.elim-team.elim-tbd  { opacity: .4; cursor: default; }
+.elim-team.elim-tbd { opacity: .35; cursor: default; }
+.elim-team.elim-winner { background: var(--green-bg); }
+.elim-team.elim-loser  { opacity: .38; }
 
-/* Kazanan */
-.elim-team.elim-winner {
-  background: var(--green-bg);
-}
-/* Kaybeden */
-.elim-team.elim-loser {
-  opacity: .45;
-}
-
-.elim-flag { font-size: 24px; flex-shrink: 0; line-height: 1; }
+.elim-flag { font-size: 20px; flex-shrink: 0; line-height: 1; }
 .elim-name {
-  flex: 1;
-  font-size: 13px; font-weight: 700; color: var(--text);
-  line-height: 1.3;
-  /* Uzun adlar için kelime kaydır — taşmayı engelle */
-  word-break: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  white-space: normal;
+  flex: 1; font-size: 12px; font-weight: 700; color: var(--text);
+  line-height: 1.3; word-break: break-word; overflow-wrap: anywhere;
+  min-width: 0;
 }
 .elim-winner .elim-name { color: var(--green); }
 .elim-loser  .elim-name { color: var(--text3); }
 
-.elim-check {
-  font-size: 16px; font-weight: 900;
-  color: var(--green); flex-shrink: 0;
-}
-
-/* Final kartı biraz daha büyük */
-.elim-card-final .elim-team { padding: 16px 16px; min-height: 60px; }
-.elim-card-final .elim-flag  { font-size: 28px; }
+/* Final kartı — daha büyük */
+.elim-card-final .elim-team { padding: 14px 16px; min-height: 56px; }
+.elim-card-final .elim-flag  { font-size: 26px; }
 .elim-card-final .elim-name  { font-size: 15px; }
 
-/* ── Eski sınıflar — geriye dönük uyumluluk ── */
-.match-card { display: none; }
+/* ══ Son 32 / Son 16 — liste grid ══ */
+.bracket-list-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols,2), 1fr);
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.bracket-list-col { display: flex; flex-direction: column; gap: 10px; }
+@media (max-width: 480px) {
+  .bracket-list-grid { --cols: 1 !important; }
+}
+
+/* ══ Yarı Final ══ */
+.bracket-sf {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-height: 240px;
+}
+.bracket-col {
+  display: flex; flex-direction: column;
+  justify-content: space-around;
+  gap: 10px; flex: 1;
+}
+.bracket-spacer { height: 10px; flex-shrink: 0; }
+
+/* SVG bağlantı çizgileri */
+.bracket-arrows {
+  display: flex; align-items: stretch;
+  width: 32px; flex-shrink: 0;
+  position: relative;
+}
+.bc-svg {
+  width: 32px; height: 100%; min-height: 120px;
+  display: block; flex-shrink: 0;
+}
+
+/* Orta sonuç kutuları */
+.bracket-mid-results {
+  display: flex; flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  gap: 8px; flex-shrink: 0;
+  padding: 0 4px;
+}
+.bracket-mid-spacer { flex: 1; }
+.bracket-next-label {
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; padding: 0 4px;
+}
+
+/* Sonuç / "sıradaki tur" kutusu */
+.bni-box {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  font-size: 11px; font-weight: 700; color: var(--text2);
+  text-align: center; white-space: nowrap;
+  min-width: 80px; max-width: 120px;
+  word-break: break-word; white-space: normal;
+}
+
+/* ══ Çeyrek Final ══ */
+.bracket-qf {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-height: 320px;
+}
+
+/* ══ Final tek kart ══ */
+.bracket-final-wrap {
+  display: flex; justify-content: center;
+  padding: 8px 0;
+}
+.bracket-final-wrap .elim-card {
+  max-width: 380px; width: 100%;
+}
 
 /* ══════════════════════════════════════════════════
    BEST 8
@@ -1428,9 +1450,9 @@ select.sinp option {
   .splash-card   { padding: 28px 26px; }
   .rr-name       { font-size: 16px; }
   .rr-flag       { font-size: 32px !important; }
-  .elim-flag     { font-size: 28px; }
-  .elim-name     { font-size: 15px; }
-  .elim-team     { padding: 15px 16px; }
+  .elim-flag     { font-size: 24px; }
+  .elim-name     { font-size: 14px; }
+  .elim-team     { padding: 12px 14px; }
   .modal-overlay { align-items: center; }
   .modal-box     { border-radius: var(--r-lg); max-width: 520px; }
   .menu-username { font-size: 48px; }
@@ -1440,10 +1462,10 @@ select.sinp option {
   .lb-hdr-row, .lb-row { padding: 14px 20px; font-size: 14px; }
 }
 
-/* Geniş ekranda bracket 3 sütun */
+/* Geniş ekranda Son 32 4 sütun */
 @media (min-width: 900px) {
-  .bracket-grid  { grid-template-columns: 1fr 1fr 1fr; }
-  .matches-list  { grid-template-columns: 1fr 1fr; }
+  .bracket-list-grid[style*="--cols:4"] { grid-template-columns: repeat(4,1fr); }
+  .bracket-list-grid[style*="--cols:2"] { grid-template-columns: repeat(2,1fr); }
 }
 
 /* ══════════════════════════════════════════════════

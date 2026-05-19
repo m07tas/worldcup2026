@@ -1048,9 +1048,6 @@ function renderElim(rid,label,n){
   const allDone=matches.every(m=>m.w);
   const isLast=S.currentStep===S.steps.length-1;
 
-  // Turnuva ağacı mı, liste mi?
-  const useTree=(rid==='r16'||rid==='qf'||rid==='sf'||rid==='final');
-
   mc().innerHTML=`
     <div class="page elim-page">
       <div class="elim-header">
@@ -1058,13 +1055,83 @@ function renderElim(rid,label,n){
         <div class="elim-sub">${n} maç · ${rid==='final'?'Şampiyonu belirle':'Kazananı seçmek için tıkla'}</div>
       </div>
       ${locked?`<div class="locked-banner">🔒 Kilitlendi.</div>`:''}
-      <div class="${useTree?'bracket-grid':'matches-list'}" id="elim-matches-${rid}">
-        ${matches.map(m=>matchCardHtml(m,rid,locked)).join('')}
+      <div class="bracket-wrap" id="elim-matches-${rid}">
+        ${buildBracket(matches,rid,locked)}
       </div>
       <div id="elim-next-${rid}" class="page-actions">
         ${elimNextHtml(allDone,locked,isLast,rid)}
       </div>
     </div>`;
+}
+
+// Turnuva ağacı inşa et
+function buildBracket(matches,rid,locked){
+  const n=matches.length;
+  if(n===1){
+    // Final — tek kart ortada büyük
+    return`<div class="bracket-final-wrap">${matchCardHtml(matches[0],rid,locked)}</div>`;
+  }
+  if(n===2){
+    // Yarı Final — 2 kart + şampiyon yeri
+    return`<div class="bracket-sf">
+      <div class="bracket-col">
+        ${matches.map(m=>matchCardHtml(m,rid,locked)).join('')}
+      </div>
+      <div class="bracket-arrows bracket-arrows-sf">
+        <div class="ba-line ba-top"></div>
+        <div class="ba-line ba-mid"></div>
+        <div class="ba-line ba-bot"></div>
+      </div>
+      <div class="bracket-next-label">
+        <div class="bni-box">🏆<br><span>${matches.filter(m=>m.w).map(m=>m.w).join(' vs ') || 'Final'}</span></div>
+      </div>
+    </div>`;
+  }
+  if(n===4){
+    // Çeyrek Final — 2 sol + 2 sağ, bağlantılar ortada
+    const left=matches.slice(0,2);
+    const right=matches.slice(2,4);
+    return`<div class="bracket-qf">
+      <div class="bracket-col">
+        ${left.map(m=>matchCardHtml(m,rid,locked)).join('<div class="bracket-spacer"></div>')}
+      </div>
+      <div class="bracket-connectors" id="bc-left-${rid}">
+        ${bracketConnectorSvg(2)}
+      </div>
+      <div class="bracket-mid-results">
+        <div class="bni-box">${left[0].w?`${getFlag(left[0].w)} ${left[0].w}`:'?'}</div>
+        <div class="bracket-mid-spacer"></div>
+        <div class="bni-box">${left[1].w?`${getFlag(left[1].w)} ${left[1].w}`:'?'}</div>
+      </div>
+      <div class="bracket-connectors">
+        ${bracketConnectorSvg(2)}
+      </div>
+      <div class="bracket-col">
+        ${right.map(m=>matchCardHtml(m,rid,locked)).join('<div class="bracket-spacer"></div>')}
+      </div>
+    </div>`;
+  }
+  // Son 32 (n=16) ve Son 16 (n=8) — grid listesi
+  const cols=n<=8?2:4;
+  const perCol=n/cols;
+  let html='<div class="bracket-list-grid" style="--cols:'+cols+'">';
+  for(let c=0;c<cols;c++){
+    html+='<div class="bracket-list-col">';
+    for(let i=0;i<perCol;i++){
+      html+=matchCardHtml(matches[c*perCol+i],rid,locked);
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function bracketConnectorSvg(pairCount){
+  // Basit SVG ok — iki kart arasını birleştiriyor
+  return`<svg class="bc-svg" viewBox="0 0 40 120" preserveAspectRatio="none" fill="none">
+    <path d="M0 30 L20 30 L20 90 L0 90" stroke="var(--border2)" stroke-width="1.5" fill="none"/>
+    <path d="M20 60 L40 60" stroke="var(--border2)" stroke-width="1.5"/>
+  </svg>`;
 }
 
 function matchCardHtml(m,rid,locked){
@@ -1073,29 +1140,28 @@ function matchCardHtml(m,rid,locked){
   const w=m.w;
   const isFinal=rid==='final';
 
-  const teamRow=(t,side)=>{
+  const teamRow=(t)=>{
     const isW=w===t.n;
     const isLoser=w&&!isW;
     const clickable=!t.tbd&&!locked;
     return`<button
       class="elim-team${isW?' elim-winner':''}${isLoser?' elim-loser':''}${t.tbd?' elim-tbd':''}"
-      data-side="${side}"
       ${clickable?`onclick="pickElim('${rid}',${m.i},'${t.n.replace(/'/g,"\\'")}')"`:'disabled'}>
       <span class="elim-flag">${t.f}</span>
       <span class="elim-name">${t.n}</span>
-      ${isW?'<span class="elim-check">✓</span>':''}
     </button>`;
   };
 
   return`<div class="elim-card${w?' elim-card-done':''}${isFinal?' elim-card-final':''}" id="ecard-${rid}-${m.i}" data-match="${m.i}">
-    <div class="elim-card-label">Maç ${m.i+1}${isFinal?' · 🏆':''}</div>
+    <div class="elim-card-label">${isFinal?'🏆 FİNAL':'Maç '+(m.i+1)}</div>
     <div class="elim-card-body">
-      ${teamRow(t1,'home')}
+      ${teamRow(t1)}
       <div class="elim-divider"></div>
-      ${teamRow(t2,'away')}
+      ${teamRow(t2)}
     </div>
   </div>`;
 }
+
 
 function elimNextHtml(allDone,locked,isLast,rid){
   if(!allDone&&!locked) return`<p class="pick-warn">⚠️ Tüm kazananları seç</p>`;
@@ -1121,25 +1187,41 @@ function pickElim(rid,mi,team){
   // In-place: sadece o kartı güncelle
   const card=document.getElementById(`ecard-${rid}-${mi}`);
   if(card){
-    const locked=IS_LOCKED;
     const[t1,t2]=S.matchTeams(rid,mi);
-    const newHtml=matchCardHtml({i:mi,t1,t2,w:team},rid,locked);
+    const newHtml=matchCardHtml({i:mi,t1,t2,w:team},rid,false);
     const tmp=document.createElement('div');
     tmp.innerHTML=newHtml;
     card.replaceWith(tmp.firstElementChild);
   }
 
+  // Çeyrek final bracket orta sonuçlarını güncelle
+  if(rid==='qf'){
+    const step=S.steps[S.currentStep];
+    const n=step.n;
+    const matches=Array.from({length:n},(_,i)=>{
+      const[t1,t2]=S.matchTeams(rid,i);
+      return{i,t1,t2,w:S.winner(rid,i)};
+    });
+    const wrap=document.getElementById(`elim-matches-${rid}`);
+    if(wrap){
+      const midResults=wrap.querySelectorAll('.bni-box');
+      const left=matches.slice(0,2);
+      const right=matches.slice(2,4);
+      if(midResults[0]) midResults[0].innerHTML=left[0].w?`${getFlag(left[0].w)} ${left[0].w}`:'?';
+      if(midResults[1]) midResults[1].innerHTML=left[1].w?`${getFlag(left[1].w)} ${left[1].w}`:'?';
+    }
+  }
+
   // İleri butonu güncelle
   const step=S.steps[S.currentStep];
   const n=step.n;
-  const matches=Array.from({length:n},(_,i)=>S.winner(rid,i));
-  const allDone=matches.every(Boolean);
+  const allDone=Array.from({length:n},(_,i)=>S.winner(rid,i)).every(Boolean);
   const isLast=S.currentStep===S.steps.length-1;
   const nextEl=document.getElementById(`elim-next-${rid}`);
   if(nextEl) nextEl.innerHTML=elimNextHtml(allDone,false,isLast,rid);
 }
 
-// Eski pick fonksiyon ismi — geriye dönük uyumluluk için
+// Geriye dönük uyumluluk
 function pick(rid,mi,team){ pickElim(rid,mi,team); }
 
 
