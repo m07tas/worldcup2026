@@ -634,41 +634,6 @@ function renderGroupMatches(gid){
   const gIdx=GRP.indexOf(gid);const isLast=gIdx===GRP.length-1;
   const allPicked=g.fx.every((_,i)=>mw[i]);
 
-  // Eşit puan var mı kontrol et
-  let tieSection='';
-  if(allPicked){
-    const{ranked,tied}=findTiedGroups(gid,mw,[]);
-    if(tied.length>0){
-      const tb=S.session.data.group_tiebreaks[gid]||[];
-      // Sıralı puan tablosu
-      const ptsTable=ranked.map(r=>`
-        <div class="tie-pts-row">
-          <span>${getFlag(r.n)} ${r.n}</span>
-          <span class="tie-pts-num">${r.pts} puan · ${r.wins} galibiyet</span>
-        </div>`).join('');
-      tieSection=`<div class="tie-section">
-        <div class="tie-title">⚖️ Eşit Puanlı Takımlar</div>
-        <div class="tie-pts-table">${ptsTable}</div>
-        <p class="tie-sub" style="margin-top:10px">⬇️ Eşit takımları sürükle-bırak ile sırala <span style="color:var(--text3);font-size:11px">(opsiyonel — atlayabilirsin)</span>:</p>
-        ${tied.map((tg,ti)=>{
-          // Mevcut tiebreak sırasına göre göster
-          const orderedTg=tb.length>0?[...tg].sort((a,b)=>{const ai=tb.indexOf(a),bi=tb.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi)}):tg;
-          return`<div class="tie-group" id="tg-${gid}-${ti}">
-            <div class="tie-group-label">${tg.map(n=>getFlag(n)+' '+n).join(' = ')}</div>
-            ${orderedTg.map((nm,ii)=>`
-              <div class="rank-row pos-${ii+1}" draggable="true" data-idx="${tg.indexOf(nm)}" data-name="${nm}"
-                ondragstart="dsTie(event,'${gid}',${ti},${tg.indexOf(nm)})" ondragover="dov(event)" ondrop="dpTie(event,'${gid}',${ti})" ondragend="de()"
-                ontouchstart="tsTie(event,'${gid}',${ti})" ontouchmove="tm(event)" ontouchend="teTie(event,'${gid}',${ti})" style="touch-action:none">
-                <div class="rr-num">${ii+1}</div>
-                <div class="rr-team"><span class="rr-flag">${getFlag(nm)}</span><div class="rr-info"><div class="rr-name">${nm}</div></div></div>
-                <div class="rr-drag">⠿</div>
-              </div>`).join('')}
-          </div>`;
-        }).join('')}
-      </div>`;
-    }
-  }
-
   // Eşitlik bölümü başlangıçta boş — sonradan in-place doldurulur
   mc().innerHTML=`
     <div class="page">
@@ -686,9 +651,9 @@ function renderGroupMatches(gid){
           <div class="group-match-card${mw[i]?' gmc-picked':''}" data-match-idx="${i}">
             <div class="gmc-date">📅 ${fx.d} &nbsp;·&nbsp; 🏟 ${fx.v}</div>
             <div class="gmc-teams">
-              <button class="gmc-team${mw[i]===fx.h?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'${fx.h}')"`:''}><span class="gmc-flag">${getFlag(fx.h)}</span><span class="gmc-name">${fx.h}</span></button>
-              <button class="gmc-draw${mw[i]==='draw'?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'draw')`:''}><span class="gmc-draw-label">Beraberlik</span><span class="gmc-draw-eq">=</span></button>
-              <button class="gmc-team gmc-team-away${mw[i]===fx.a?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'${fx.a}')"`:''}><span class="gmc-name">${fx.a}</span><span class="gmc-flag">${getFlag(fx.a)}</span></button>
+              <button class="gmc-team gmc-btn-home${mw[i]===fx.h?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'${fx.h}')"`:''}><span class="gmc-flag">${getFlag(fx.h)}</span><span class="gmc-name">${fx.h}</span></button>
+              <button class="gmc-draw gmc-btn-draw${mw[i]==='draw'?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'draw')`:''}><span class="gmc-draw-eq">=</span></button>
+              <button class="gmc-team gmc-team-away gmc-btn-away${mw[i]===fx.a?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'${fx.a}')"`:''}><span class="gmc-name">${fx.a}</span><span class="gmc-flag">${getFlag(fx.a)}</span></button>
             </div>
           </div>`).join('')}
       </div>
@@ -716,11 +681,12 @@ function setMatchWinner(gid,matchIdx,winner){
   const card=document.querySelector(`.group-match-card[data-match-idx="${matchIdx}"]`);
   if(card){
     const fx=g.fx[matchIdx];
-    const [btnH,btnD,btnA]=card.querySelectorAll('.gmc-team, .gmc-draw');
+    const btnH=card.querySelector('.gmc-btn-home');
+    const btnD=card.querySelector('.gmc-btn-draw');
+    const btnA=card.querySelector('.gmc-btn-away');
     if(btnH){ btnH.classList.toggle('selected', winner===fx.h); }
     if(btnD){ btnD.classList.toggle('selected', winner==='draw'); }
     if(btnA){ btnA.classList.toggle('selected', winner===fx.a); }
-    // kart kenarlığı
     card.classList.toggle('gmc-picked', !!winner);
   }
 
@@ -789,89 +755,149 @@ function updateNextBtn(gid,mw,g){
 function buildTieSection(gid,mw,tied){
   const{ranked}=findTiedGroups(gid,mw,[]);
   const tb=S.session.data.group_tiebreaks[gid]||[];
-  const ptsTable=ranked.map(r=>`
-    <div class="tie-pts-row">
-      <span>${getFlag(r.n)} ${r.n}</span>
-      <span class="tie-pts-num">${r.pts} puan · ${r.wins} galibiyet</span>
-    </div>`).join('');
-  return `<div class="tie-title">⚖️ Eşit Puanlı Takımlar</div>
-    <div class="tie-pts-table">${ptsTable}</div>
-    <p class="tie-sub" style="margin-top:10px">⬇️ Eşit takımları sürükle-bırak ile sırala <span style="color:var(--text3);font-size:11px">(opsiyonel)</span>:</p>
-    ${tied.map((tg,ti)=>{
-      const orderedTg=tb.length>0?[...tg].sort((a,b)=>{const ai=tb.indexOf(a),bi=tb.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi)}):tg;
-      return`<div class="tie-group" id="tg-${gid}-${ti}">
-        <div class="tie-group-label">${tg.map(n=>getFlag(n)+' '+n).join(' = ')}</div>
-        ${orderedTg.map((nm,ii)=>`
-          <div class="rank-row pos-${ii+1}" draggable="true" data-idx="${tg.indexOf(nm)}" data-name="${nm}"
-            ondragstart="dsTie(event,'${gid}',${ti},${tg.indexOf(nm)})" ondragover="dov(event)" ondrop="dpTie(event,'${gid}',${ti})" ondragend="de()"
-            ontouchstart="tsTie(event,'${gid}',${ti})" ontouchmove="tm(event)" ontouchend="teTie(event,'${gid}',${ti})" style="touch-action:none">
-            <div class="rr-num">${ii+1}</div>
-            <div class="rr-team"><span class="rr-flag">${getFlag(nm)}</span><div class="rr-info"><div class="rr-name">${nm}</div></div></div>
-            <div class="rr-drag">⠿</div>
-          </div>`).join('')}
+
+  // Tüm tiebreak grubundaki isimleri düz bir diziye çek
+  const allTiedNames=tied.flat();
+
+  // Tiebreak sırasını uygula: sadece eşit puanlılar arasında
+  // ranked'ı tiebreak ile yeniden sırala
+  const finalRanked=[...ranked].sort((a,b)=>{
+    if(a.pts!==b.pts) return b.pts-a.pts;
+    // İkisi de aynı eşitlik grubundaysa tiebreak sırasına bak
+    const ai=tb.indexOf(a.n), bi=tb.indexOf(b.n);
+    if(ai>=0 && bi>=0) return ai-bi;
+    return 0;
+  });
+
+  // Her eşitlik grubu için mevcut sıralı halini hesapla
+  const tiedGroupsOrdered=tied.map(tg=>{
+    if(tb.length===0) return tg;
+    return [...tg].sort((a,b)=>{
+      const ai=tb.indexOf(a), bi=tb.indexOf(b);
+      if(ai>=0 && bi>=0) return ai-bi;
+      return 0;
+    });
+  });
+
+  // Sıralama satırı üret
+  const rowsHtml=finalRanked.map((r,rankIdx)=>{
+    const isTied=allTiedNames.includes(r.n);
+    // Hangi tied grubunda olduğunu bul
+    const tgIdx=tied.findIndex(tg=>tg.includes(r.n));
+    const posInTg=tgIdx>=0?tiedGroupsOrdered[tgIdx].indexOf(r.n):0;
+    const badges=['b-pass','b-pass','b-third','b-out'];
+    const labelsArr=['Son 32 ✓','Son 32 ✓','En İyi 3. Adayı','Elenir'];
+    const pos=rankIdx+1;
+
+    if(isTied){
+      // Sürüklenebilir satır
+      return`<div class="rank-row pos-${pos} tie-draggable" draggable="true"
+        data-name="${r.n}" data-tg="${tgIdx}" data-pos="${posInTg}"
+        ondragstart="dsTie(event,'${gid}',${tgIdx},${posInTg})" ondragover="dov(event)" ondrop="dpTie(event,'${gid}',${tgIdx})" ondragend="de()"
+        ontouchstart="tsTie(event,'${gid}',${tgIdx})" ontouchmove="tm(event)" ontouchend="teTie(event,'${gid}',${tgIdx})" style="touch-action:none">
+        <div class="rr-num">${pos}</div>
+        <div class="rr-team">
+          <span class="rr-flag">${getFlag(r.n)}</span>
+          <div class="rr-info">
+            <div class="rr-name">${r.n}</div>
+            <div class="rr-desc tie-desc">⚖️ ${r.pts} puan · eşit — sürükle sırala</div>
+          </div>
+        </div>
+        <div class="rr-badge ${badges[rankIdx]}">${labelsArr[rankIdx]}</div>
+        <div class="rr-drag">⠿</div>
       </div>`;
-    }).join('')}`;
+    } else {
+      // Sabit satır
+      return`<div class="rank-row pos-${pos} rank-fixed">
+        <div class="rr-num">${pos}</div>
+        <div class="rr-team">
+          <span class="rr-flag">${getFlag(r.n)}</span>
+          <div class="rr-info">
+            <div class="rr-name">${r.n}</div>
+            <div class="rr-desc">${r.pts} puan · ${r.wins} galibiyet</div>
+          </div>
+        </div>
+        <div class="rr-badge ${badges[rankIdx]}">${labelsArr[rankIdx]}</div>
+        <div class="rr-drag" style="opacity:0">·</div>
+      </div>`;
+    }
+  }).join('');
+
+  // Eşit puanlı grupları liste olarak göster (kullanıcıya bilgi)
+  const tiedInfo=tied.map(tg=>`<span class="tie-eq-badge">${tg.map(n=>getFlag(n)+' '+n).join(' = ')}</span>`).join(' ');
+
+  return`<div class="tie-header">
+    <div class="tie-title">⚖️ Eşit Puan Durumu</div>
+    <div class="tie-eq-info">${tiedInfo}</div>
+    <p class="tie-sub">Eşit puanlı takımları (sarı kenarlıklı) sürükle-bırak ile sırala.</p>
+  </div>
+  <div class="rank-table" style="margin-bottom:0">
+    ${rowsHtml}
+  </div>`;
 }
 
-// Tie drag — daha temiz implementasyon
-let _tieDrag={gid:null,tgIdx:null,fromIdx:null,fromName:null};
+// Tie drag
+let _tieDrag={gid:null,tgIdx:null,fromName:null};
 
-function dsTie(e,gid,tgIdx,idx){
-  const{tied}=findTiedGroups(gid,S.session.data.group_matches[gid]||{},[]);
-  const tg=tied[tgIdx]||[];
-  _tieDrag={gid,tgIdx,fromIdx:idx,fromName:tg[idx]};
+function dsTie(e,gid,tgIdx,posInTg){
+  const fromName=e.currentTarget.dataset.name;
+  _tieDrag={gid,tgIdx,fromName};
   e.currentTarget.classList.add('dragging');
   e.dataTransfer.effectAllowed='move';
 }
 
 function dpTie(e,gid,tgIdx){
   e.preventDefault();de();
-  const t=e.target.closest('.rank-row');if(!t)return;
-  const toIdx=parseInt(t.dataset.idx);
-  if(_tieDrag.fromIdx===toIdx||_tieDrag.gid!==gid||_tieDrag.tgIdx!==tgIdx)return;
+  const t=e.target.closest('.tie-draggable');
+  if(!t||_tieDrag.gid!==gid)return;
+  const toName=t.dataset.name;
+  if(!toName||_tieDrag.fromName===toName)return;
 
   const{tied}=findTiedGroups(gid,S.session.data.group_matches[gid]||{},[]);
+  // Her eşitlik grubu için bağımsız tiebreak — tgIdx doğru eşleşiyor mu kontrol et
   const tg=tied[tgIdx]||[];
-  // Mevcut sırayı al (tiebreak varsa kullan, yoksa tied group sırası)
+  if(!tg.includes(_tieDrag.fromName)||!tg.includes(toName))return;
+
   const cur=S.session.data.group_tiebreaks[gid]
     ? [...S.session.data.group_tiebreaks[gid]]
     : [...tg];
-  // from ve to isimlerini bul
-  const fromName=tg[_tieDrag.fromIdx];
-  const toName=tg[toIdx];
-  const fi=cur.indexOf(fromName)<0?_tieDrag.fromIdx:cur.indexOf(fromName);
-  const ti=cur.indexOf(toName)<0?toIdx:cur.indexOf(toName);
-  const [moved]=cur.splice(fi,1);
+  const fromName=_tieDrag.fromName;
+  // Eğer cur'da yoksa tg sırasından ekle
+  if(!cur.includes(fromName)) cur.push(...tg.filter(n=>!cur.includes(n)));
+  const fi=cur.indexOf(fromName);
+  const ti=cur.indexOf(toName)<0?cur.length:cur.indexOf(toName);
+  const[moved]=cur.splice(fi,1);
   cur.splice(ti,0,moved);
   S.setTiebreak(gid,cur);
   _refreshTieContainer(gid);
 }
 
-let _tieTouchDrag={gid:null,tgIdx:null,el:null,fromIdx:null};
+let _tieTouchDrag={gid:null,tgIdx:null,el:null,fromName:null};
 function tsTie(e,gid,tgIdx){
-  _tieTouchDrag={gid,tgIdx,el:e.currentTarget,fromIdx:parseInt(e.currentTarget.dataset.idx)};
-  e.currentTarget.classList.add('dragging');
+  const el=e.currentTarget;
+  _tieTouchDrag={gid,tgIdx,el,fromName:el.dataset.name};
+  el.classList.add('dragging');
 }
 function teTie(e,gid,tgIdx){
   if(!_tieTouchDrag.el)return;
-  const rows=Array.from(_tieTouchDrag.el.parentNode.querySelectorAll('.rank-row'));
+  const container=_tieTouchDrag.el.closest('.rank-table')||_tieTouchDrag.el.parentNode;
+  const rows=Array.from(container.querySelectorAll('.tie-draggable'));
   const tgt=rows.find(r=>r.classList.contains('drag-over'));
   rows.forEach(r=>r.classList.remove('dragging','drag-over'));
   if(tgt){
-    const toIdx=parseInt(tgt.dataset.idx);
-    if(_tieTouchDrag.fromIdx!==toIdx){
+    const toName=tgt.dataset.name;
+    if(toName&&_tieTouchDrag.fromName!==toName){
       const{tied}=findTiedGroups(gid,S.session.data.group_matches[gid]||{},[]);
       const tg=tied[tgIdx]||[];
       const cur=S.session.data.group_tiebreaks[gid]?[...S.session.data.group_tiebreaks[gid]]:[...tg];
-      const fromName=tg[_tieTouchDrag.fromIdx];
-      const toName=tg[toIdx];
-      const fi=cur.indexOf(fromName)<0?_tieTouchDrag.fromIdx:cur.indexOf(fromName);
-      const ti=cur.indexOf(toName)<0?toIdx:cur.indexOf(toName);
+      if(!cur.includes(_tieTouchDrag.fromName)) cur.push(...tg.filter(n=>!cur.includes(n)));
+      const fi=cur.indexOf(_tieTouchDrag.fromName);
+      const ti=cur.indexOf(toName)<0?cur.length:cur.indexOf(toName);
       const[moved]=cur.splice(fi,1);cur.splice(ti,0,moved);
       S.setTiebreak(gid,cur);
     }
   }
-  _tieTouchDrag={gid:null,tgIdx:null,el:null,fromIdx:null};
+  _tieTouchDrag={gid:null,tgIdx:null,el:null,fromName:null};
   _refreshTieContainer(gid);
 }
 
