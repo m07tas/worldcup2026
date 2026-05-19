@@ -669,29 +669,36 @@ function renderGroupMatches(gid){
     }
   }
 
+  // Eşitlik bölümü başlangıçta boş — sonradan in-place doldurulur
   mc().innerHTML=`
     <div class="page">
       <div class="grp-topbar">
         <div class="grp-badge">Grup ${gid}</div>
         <div class="grp-pts-preview" id="grp-pts-${gid}"></div>
       </div>
-      <p class="grp-hint">${locked?'🔒 Kilitli':'Her maçta kazananı seç. Beraberlik de seçebilirsin.'}</p>
+      <div class="match-progress-bar" id="match-progress-${gid}">
+        <div class="mp-track"><div class="mp-fill" style="width:${Math.round(Object.keys(mw).length/g.fx.length*100)}%"></div></div>
+        <span class="mp-txt">${Object.keys(mw).length}/${g.fx.length} maç seçildi</span>
+      </div>
+      <p class="grp-hint">${locked?'🔒 Kilitli':'Her maçta kazananı seç — beraberlik için ortadaki = butonuna bas.'}</p>
       <div class="match-list-group">
         ${g.fx.map((fx,i)=>`
-          <div class="group-match-card">
-            <div class="gmc-date">${fx.d} · ${fx.v}</div>
+          <div class="group-match-card${mw[i]?' gmc-picked':''}" data-match-idx="${i}">
+            <div class="gmc-date">📅 ${fx.d} &nbsp;·&nbsp; 🏟 ${fx.v}</div>
             <div class="gmc-teams">
-              <button class="gmc-team${mw[i]===fx.h?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'${fx.h}')"`:''}>${getFlag(fx.h)} ${fx.h}</button>
-              <button class="gmc-draw${mw[i]==='draw'?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'draw')"`:''}>=</button>
-              <button class="gmc-team${mw[i]===fx.a?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'${fx.a}')"`:''}>${fx.a} ${getFlag(fx.a)}</button>
+              <button class="gmc-team${mw[i]===fx.h?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'${fx.h}')"`:''}><span class="gmc-flag">${getFlag(fx.h)}</span><span class="gmc-name">${fx.h}</span></button>
+              <button class="gmc-draw${mw[i]==='draw'?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'draw')`:''}><span class="gmc-draw-label">Beraberlik</span><span class="gmc-draw-eq">=</span></button>
+              <button class="gmc-team gmc-team-away${mw[i]===fx.a?' selected':''}" ${!locked?`onclick="setMatchWinner('${gid}',${i},'${fx.a}')"`:''}><span class="gmc-name">${fx.a}</span><span class="gmc-flag">${getFlag(fx.a)}</span></button>
             </div>
           </div>`).join('')}
       </div>
-      ${tieSection}
-      <div class="page-actions">
+      <div class="tie-container${allPicked?' tie-visible':''}" id="tie-container-${gid}" style="display:${allPicked?'block':'none'}">
+        ${allPicked?(()=>{const{tied}=findTiedGroups(gid,mw,[]);return tied.length>0?buildTieSection(gid,mw,tied):''})():''}
+      </div>
+      <div class="page-actions" id="next-btn-wrap-${gid}">
         ${allPicked
           ?`<button class="btn-primary btn-next" onclick="stepNav(1)">${isLast?'Özete Git →':'Grup '+GRP[gIdx+1]+' →'}</button>`
-          :`<div style="display:flex;flex-direction:column;gap:8px"><p class="pick-warn">⚠️ ${6-Object.keys(mw).length} maç kaldı</p><button class="btn-primary btn-next" onclick="stepNav(1)" style="opacity:.5;filter:grayscale(.5)">${isLast?'Yine de İlerle →':'Yine de İlerle →'}</button></div>`}
+          :`<div style="display:flex;flex-direction:column;gap:8px"><p class="pick-warn">⚠️ ${g.fx.length-Object.keys(mw).length} maç kaldı</p><button class="btn-primary btn-next btn-disabled" onclick="stepNav(1)">${isLast?'Yine de İlerle →':'Yine de İlerle →'}</button></div>`}
       </div>
     </div>`;
   updateGroupPtsPreview(gid,mw);
@@ -700,14 +707,110 @@ function renderGroupMatches(gid){
 function setMatchWinner(gid,matchIdx,winner){
   if(IS_LOCKED)return;
   S.setMatchWinner(gid,matchIdx,winner);
-  renderGroupMatches(gid);
+
+  // ── In-place DOM güncelle — sayfa yenileme hissi yok ──
+  const mw=S.session.data.group_matches[gid]||{};
+  const g=GROUPS[gid];
+
+  // 1. O satırın 3 butonunu güncelle
+  const card=document.querySelector(`.group-match-card[data-match-idx="${matchIdx}"]`);
+  if(card){
+    const fx=g.fx[matchIdx];
+    const [btnH,btnD,btnA]=card.querySelectorAll('.gmc-team, .gmc-draw');
+    if(btnH){ btnH.classList.toggle('selected', winner===fx.h); }
+    if(btnD){ btnD.classList.toggle('selected', winner==='draw'); }
+    if(btnA){ btnA.classList.toggle('selected', winner===fx.a); }
+    // kart kenarlığı
+    card.classList.toggle('gmc-picked', !!winner);
+  }
+
+  // 2. Puan önizlemesini güncelle
+  updateGroupPtsPreview(gid,mw);
+
+  // 3. İlerleme çubuğunu güncelle
+  updateMatchProgress(gid,mw,g);
+
+  // 4. Tiebreak bölümünü güncelle (eğer tüm maçlar seçildiyse)
+  const allPicked=g.fx.every((_,i)=>mw[i]);
+  const tieCont=document.getElementById(`tie-container-${gid}`);
+  if(tieCont){
+    if(allPicked){
+      const{tied}=findTiedGroups(gid,mw,[]);
+      if(tied.length>0){
+        tieCont.style.display='block';
+        // Tam yenileme sadece tie section için — sayfanın geri kalanı dokunulmaz
+        tieCont.innerHTML=buildTieSection(gid,mw,tied);
+      } else {
+        tieCont.style.display='none';
+      }
+    } else {
+      tieCont.style.display='none';
+    }
+  }
+
+  // 5. "İleri" butonunu/uyarısını güncelle
+  updateNextBtn(gid,mw,g);
+
+  autoSave();
 }
 
 function updateGroupPtsPreview(gid,mw){
   const el=document.getElementById(`grp-pts-${gid}`);if(!el)return;
-  if(Object.keys(mw).length===0)return;
+  if(Object.keys(mw).length===0){ el.innerHTML=''; return; }
   const ranked=calcGroupRankingFromMatches(gid,mw);
-  el.innerHTML=ranked.map(r=>`<span class="pts-chip">${getFlag(r.n)} ${r.pts}p</span>`).join('');
+  el.innerHTML=ranked.map(r=>`<span class="pts-chip pts-chip-${r.pts>=6?'hi':r.pts>=3?'mid':'lo'}">${getFlag(r.n)} <b>${r.pts}p</b></span>`).join('');
+}
+
+function updateMatchProgress(gid,mw,g){
+  const el=document.getElementById(`match-progress-${gid}`);if(!el)return;
+  const done=Object.keys(mw).length;
+  const total=g.fx.length;
+  const fill=el.querySelector('.mp-fill');
+  const txt=el.querySelector('.mp-txt');
+  if(fill)fill.style.width=`${Math.round(done/total*100)}%`;
+  if(txt)txt.textContent=`${done}/${total} maç seçildi`;
+}
+
+function updateNextBtn(gid,mw,g){
+  const el=document.getElementById(`next-btn-wrap-${gid}`);if(!el)return;
+  const gIdx=GRP.indexOf(gid);const isLast=gIdx===GRP.length-1;
+  const allPicked=g.fx.every((_,i)=>mw[i]);
+  if(allPicked){
+    el.innerHTML=`<button class="btn-primary btn-next" onclick="stepNav(1)">${isLast?'Özete Git →':'Grup '+GRP[gIdx+1]+' →'}</button>`;
+  } else {
+    const left=g.fx.length-Object.keys(mw).length;
+    el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">
+      <p class="pick-warn">⚠️ ${left} maç kaldı</p>
+      <button class="btn-primary btn-next btn-disabled" onclick="stepNav(1)">${isLast?'Yine de İlerle →':'Yine de İlerle →'}</button>
+    </div>`;
+  }
+}
+
+function buildTieSection(gid,mw,tied){
+  const{ranked}=findTiedGroups(gid,mw,[]);
+  const tb=S.session.data.group_tiebreaks[gid]||[];
+  const ptsTable=ranked.map(r=>`
+    <div class="tie-pts-row">
+      <span>${getFlag(r.n)} ${r.n}</span>
+      <span class="tie-pts-num">${r.pts} puan · ${r.wins} galibiyet</span>
+    </div>`).join('');
+  return `<div class="tie-title">⚖️ Eşit Puanlı Takımlar</div>
+    <div class="tie-pts-table">${ptsTable}</div>
+    <p class="tie-sub" style="margin-top:10px">⬇️ Eşit takımları sürükle-bırak ile sırala <span style="color:var(--text3);font-size:11px">(opsiyonel)</span>:</p>
+    ${tied.map((tg,ti)=>{
+      const orderedTg=tb.length>0?[...tg].sort((a,b)=>{const ai=tb.indexOf(a),bi=tb.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi)}):tg;
+      return`<div class="tie-group" id="tg-${gid}-${ti}">
+        <div class="tie-group-label">${tg.map(n=>getFlag(n)+' '+n).join(' = ')}</div>
+        ${orderedTg.map((nm,ii)=>`
+          <div class="rank-row pos-${ii+1}" draggable="true" data-idx="${tg.indexOf(nm)}" data-name="${nm}"
+            ondragstart="dsTie(event,'${gid}',${ti},${tg.indexOf(nm)})" ondragover="dov(event)" ondrop="dpTie(event,'${gid}',${ti})" ondragend="de()"
+            ontouchstart="tsTie(event,'${gid}',${ti})" ontouchmove="tm(event)" ontouchend="teTie(event,'${gid}',${ti})" style="touch-action:none">
+            <div class="rr-num">${ii+1}</div>
+            <div class="rr-team"><span class="rr-flag">${getFlag(nm)}</span><div class="rr-info"><div class="rr-name">${nm}</div></div></div>
+            <div class="rr-drag">⠿</div>
+          </div>`).join('')}
+      </div>`;
+    }).join('')}`;
 }
 
 // Tie drag — daha temiz implementasyon
@@ -741,7 +844,7 @@ function dpTie(e,gid,tgIdx){
   const [moved]=cur.splice(fi,1);
   cur.splice(ti,0,moved);
   S.setTiebreak(gid,cur);
-  renderGroupMatches(gid);
+  _refreshTieContainer(gid);
 }
 
 let _tieTouchDrag={gid:null,tgIdx:null,el:null,fromIdx:null};
@@ -769,7 +872,20 @@ function teTie(e,gid,tgIdx){
     }
   }
   _tieTouchDrag={gid:null,tgIdx:null,el:null,fromIdx:null};
-  renderGroupMatches(gid);
+  _refreshTieContainer(gid);
+}
+
+function _refreshTieContainer(gid){
+  const mw=S.session.data.group_matches[gid]||{};
+  const tieCont=document.getElementById(`tie-container-${gid}`);
+  if(!tieCont)return;
+  const{tied}=findTiedGroups(gid,mw,[]);
+  if(tied.length>0){
+    tieCont.style.display='block';
+    tieCont.innerHTML=buildTieSection(gid,mw,tied);
+  } else {
+    tieCont.style.display='none';
+  }
 }
 
 // ── FİKSTÜR ──────────────────────────────────────────────────
